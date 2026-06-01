@@ -1,4 +1,5 @@
 """Token-hygiene tests: the diagnostic descriptor must never leak token bytes."""
+
 from agentforce_probe import agent_api
 
 

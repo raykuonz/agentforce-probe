@@ -1,4 +1,5 @@
 """Tests for spec loading + validation."""
+
 import pytest
 
 from agentforce_probe import scorer

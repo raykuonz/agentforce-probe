@@ -8,6 +8,7 @@ Secrets are NEVER printed, logged, or written to evidence files. The only thing
 this module ever exposes about a secret is whether it is *present* and (for
 diagnostics) its length / shape — never its value.
 """
+
 import os
 
 # ── secret names (env var keys) ──────────────────────────────────────────────
@@ -60,13 +61,13 @@ def _parse_env_file(path):
     out = {}
     if not os.path.exists(path):
         return out
-    with open(path, "r", encoding="utf-8") as fh:
+    with open(path, encoding="utf-8") as fh:
         for raw in fh:
             line = raw.strip()
             if not line or line.startswith("#"):
                 continue
             if line.startswith("export "):
-                line = line[len("export "):].strip()
+                line = line[len("export ") :].strip()
             if "=" not in line:
                 continue
             key, _, val = line.partition("=")

@@ -4,6 +4,7 @@
 the JSON body, so we never json.loads() the whole stdout — we scan for the first
 brace that yields a parseable object.
 """
+
 import json
 import re
 import shutil
@@ -41,8 +42,7 @@ def run_sf(args, timeout=300, check=True):
     cmd = ["sf"] + list(args)
     proc = subprocess.run(
         cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
         text=True,
         timeout=timeout,
     )

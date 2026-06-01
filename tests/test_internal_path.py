@@ -3,11 +3,13 @@
 Proves the run_session -> score_session flow without any network/secret. The
 fake session returns canned responses; the mock judge scores them.
 """
+
 from agentforce_probe import scorer, sf_internal
 
 
 class _FakeSession:
     """Stand-in for agent_api.AgentApiSession — no network."""
+
     def __init__(self, replies):
         self._replies = replies
         self._i = 0
@@ -46,8 +48,13 @@ def test_run_session_replays_all_cases_via_injected_session():
         return s
 
     raw = sf_internal.run_session(
-        spec=spec, instance_url="https://x", bot_definition_id="0Xx",
-        consumer_key="ck", consumer_secret="cs", session_factory=factory)
+        spec=spec,
+        instance_url="https://x",
+        bot_definition_id="0Xx",
+        consumer_key="ck",
+        consumer_secret="cs",
+        session_factory=factory,
+    )
 
     assert len(raw) == 2
     assert raw[0]["response"] == "r1"
@@ -73,10 +80,10 @@ def test_score_session_with_mock_judge_applies_filtering():
         return ok, "mock"
 
     scored = sf_internal.score_session(spec=spec, raw_results=raw, judge_fn=judge_fn)
-    assert scored[0]["output"] == "PASS"      # non-empty response
-    assert scored[1]["output"] == "FAIL"      # empty response
-    assert scored[1]["topic"] == "FAIL"       # expectedTopic t2 != "wrong"
-    assert scored[0]["topic"] == "-"          # no expectedTopic declared
+    assert scored[0]["output"] == "PASS"  # non-empty response
+    assert scored[1]["output"] == "FAIL"  # empty response
+    assert scored[1]["topic"] == "FAIL"  # expectedTopic t2 != "wrong"
+    assert scored[0]["topic"] == "-"  # no expectedTopic declared
 
     agg, total_pass, total = scorer.aggregate(scored)
     assert agg["output"] == [1, 2]

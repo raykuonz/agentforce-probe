@@ -10,6 +10,7 @@ The assertion-filtering rules:
 A case missing an assertion is rendered as "-" (intentionally not set) and does
 NOT count against the score.
 """
+
 import os
 
 try:
@@ -28,7 +29,7 @@ def load_spec(path):
         raise SpecError("pyyaml is required to read specs: pip install pyyaml")
     if not os.path.exists(path):
         raise SpecError(f"spec not found: {path}")
-    with open(path, "r", encoding="utf-8") as fh:
+    with open(path, encoding="utf-8") as fh:
         spec = yaml.safe_load(fh)
     if not isinstance(spec, dict):
         raise SpecError(f"spec must be a YAML mapping: {path}")
@@ -78,9 +79,18 @@ def _blank_result(number, utterance):
     }
 
 
-def score_case(spec_case, number, *, topic_pass=None, actions_pass=None,
-               output_pass=None, response="", actual_topic=None,
-               actual_actions=None, judge_reason=None):
+def score_case(
+    spec_case,
+    number,
+    *,
+    topic_pass=None,
+    actions_pass=None,
+    output_pass=None,
+    response="",
+    actual_topic=None,
+    actual_actions=None,
+    judge_reason=None,
+):
     """Apply the filtering rules to produce one unified case result.
 
     Pass `topic_pass` / `actions_pass` / `output_pass` as booleans, or None to

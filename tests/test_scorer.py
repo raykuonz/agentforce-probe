@@ -1,4 +1,5 @@
 """Tests for the assertion-filtering scorer."""
+
 from agentforce_probe import scorer
 
 
@@ -33,8 +34,7 @@ def test_output_always_scored_when_evaluated():
 
 def test_aggregate_ignores_dash_dimensions():
     results = [
-        scorer.score_case({"utterance": "a", "expectedTopic": "t"}, 1,
-                          topic_pass=True, output_pass=True),
+        scorer.score_case({"utterance": "a", "expectedTopic": "t"}, 1, topic_pass=True, output_pass=True),
         scorer.score_case({"utterance": "b"}, 2, output_pass=False),
     ]
     agg, total_pass, total = scorer.aggregate(results)

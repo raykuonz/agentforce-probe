@@ -1,52 +1,85 @@
 # Contributing to agentforce-probe
 
-Thanks for your interest! This is a small, focused tool. Contributions that keep
-it small, local, and privacy-first are very welcome.
+Thanks for taking the time to contribute.
 
-## Ground rules
+## Ways to contribute
 
-1. **Privacy-first, always.** Secrets (ECA consumer key/secret, judge API keys,
-   tokens) must never be printed, logged, written to evidence, embedded as
-   source literals, or passed through a shell. Token diagnostics may expose only
-   length and JWT segment count — never bytes. If a change risks leaking a
-   secret, it will not be merged.
-2. **No customer / org / real test data.** Examples, fixtures, and tests must use
-   only fictional, made-up data. Never commit a real org alias, customer name,
-   agent transcript, or anything that identifies a real Salesforce org.
-3. **Stay local.** The only network calls the tool makes are to the target
-   Salesforce org and (optionally, Internal path) the configured judge LLM. No
-   telemetry, no third-party calls.
-4. **Stdlib-first.** The only runtime dependency is `pyyaml`. Please don't add
-   dependencies without a strong reason.
+- **Bug reports** — open an issue with the bug report template
+- **Feature requests** — open an issue with the feature request template
+- **Pull requests** — fix bugs, add judge backends, improve docs
 
-## Dev setup
+---
+
+## Development setup
 
 ```bash
-git clone https://github.com/raykuonz/agentforce-probe
+# Clone
+git clone https://github.com/raykuo/agentforce-probe
 cd agentforce-probe
-pip install -e ".[dev]"
+
+# Install with dev dependencies (uses lock file)
+uv sync --extra dev
+
+# Run the test suite
+uv run pytest
+
+# Check linting and formatting
+uv run ruff check .
+uv run ruff format --check .
 ```
 
-## Before you open a PR
+Python 3.10+ required.
 
-```bash
-pytest            # all tests must pass (they are offline; no org/secret needed)
-ruff check .      # lint must be clean
+---
+
+## Project layout
+
+```
+src/agentforce_probe/
+  cli.py          # argparse entry point: run / doctor subcommands
+  config.py       # .env / environment resolution (no secrets logged)
+  doctor.py       # pre-flight environment validation
+  sf_external.py  # External Copilot path → sf agent test (Testing Center)
+  sf_internal.py  # Internal Copilot path → headless Agent API + judge
+  agent_api.py    # ECA → Client-Credentials → JWT → session; token_shape() hygiene
+  agent_meta.py   # agent metadata resolution
+  judge.py        # Claude Code file-handoff protocol + API-key fallback
+  scorer.py       # assertion-filtering scorer, spec loading
+  evidence.py     # deterministic evidence Markdown render
+  sfcli.py        # thin wrapper around the Salesforce CLI
+examples/specs/   # fictional test specs (no customer/org/real data)
+tests/            # pytest suite (offline, no live org required)
 ```
 
-- Add tests for new behavior. The existing tests run with **no network and no
-  secrets** (they inject fake sessions / mock judges) — keep it that way.
-- If you touch the Agent API flow, update the "gotchas" section of the README if
-  the behavior changes.
-- Keep the unified evidence format stable, or bump it deliberately.
+---
 
-## Reporting bugs
+## Working on the test runner
 
-Open an issue with: the command you ran (redact secrets/org names), what you
-expected, what happened, and the relevant `doctor` output. Never paste tokens,
-consumer secrets, or real customer data into an issue.
+- **Never commit real test data.** Examples, fixtures, and tests must use fictional agents, orgs, and transcripts. No customer names, org domains, real responses, or secrets — ever.
+- **Secrets stay out of output.** Anything read from `.env` / environment must never be printed, logged, written to evidence, or embedded as a literal. Token diagnostics may expose only length and JWT segment count.
+- **Both paths must dry-run offline.** Spec loading, path dispatch, and the Claude Code judge file-handoff are expected to work with no network access; new code should preserve that.
 
-## License
+---
 
-By contributing you agree that your contributions are licensed under the
-[MIT License](LICENSE).
+## Pull request checklist
+
+- [ ] `uv run pytest` passes (all existing tests green)
+- [ ] `uv run ruff check .` and `uv run ruff format --check .` pass
+- [ ] New code has tests
+- [ ] README updated if adding a new command, flag, or judge backend
+- [ ] CHANGELOG.md updated under `[Unreleased]`
+- [ ] No customer / org / real transcript data or secrets introduced anywhere
+
+---
+
+## Code style
+
+- **Linter/formatter**: [ruff](https://docs.astral.sh/ruff/) is enforced in CI. Run `uv run ruff check .` and `uv run ruff format .` before opening a PR.
+- Type hints on all public functions
+- Docstrings on all public functions
+
+---
+
+## Reporting security issues
+
+See [SECURITY.md](SECURITY.md).

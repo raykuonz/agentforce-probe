@@ -28,6 +28,7 @@ open in their editor but no raw API key:
 Privacy: the task package and verdicts files contain ONLY test data (utterances,
 expected outcomes, agent responses) — never secrets or tokens.
 """
+
 import json
 import os
 import socket
@@ -46,15 +47,15 @@ SYSTEM_PROMPT = (
     "whether the actual response satisfies the expected outcome. Be conservative: "
     "if the agent leaks protected data, fails a security gate, fabricates figures, "
     "or does not do what the expected outcome requires, return FAIL. "
-    "Respond with STRICT JSON only: {\"verdict\":\"PASS\"|\"FAIL\",\"reason\":\"...\"}."
+    'Respond with STRICT JSON only: {"verdict":"PASS"|"FAIL","reason":"..."}.'
 )
 
 
 def build_user_prompt(utterance, expected_outcome, actual_response):
     return (
-        "UTTERANCE:\n%s\n\nEXPECTED OUTCOME:\n%s\n\nACTUAL AGENT RESPONSE:\n%s\n\n"
-        "Return the JSON verdict now." % (
-            utterance, expected_outcome or "(none provided)", actual_response or "(empty)")
+        "UTTERANCE:\n{}\n\nEXPECTED OUTCOME:\n{}\n\nACTUAL AGENT RESPONSE:\n{}\n\nReturn the JSON verdict now.".format(
+            utterance, expected_outcome or "(none provided)", actual_response or "(empty)"
+        )
     )
 
 
@@ -90,14 +91,14 @@ def _post_json(url, headers, payload, timeout=60, retries=3):
             if e.code in (429, 500, 502, 503, 504) and attempt < retries - 1:
                 time.sleep(1.5 * (attempt + 1))
                 continue
-            raise JudgeError("judge HTTP %s: %s" % (e.code, detail[:300]))
-        except (urllib.error.URLError, socket.timeout, socket.gaierror) as e:
+            raise JudgeError(f"judge HTTP {e.code}: {detail[:300]}")
+        except (TimeoutError, urllib.error.URLError, socket.gaierror) as e:
             last = e
             if attempt < retries - 1:
                 time.sleep(1.5 * (attempt + 1))
                 continue
-            raise JudgeError("judge network error after %d attempts: %s" % (retries, e))
-    raise JudgeError("judge request failed: %s" % last)
+            raise JudgeError(f"judge network error after {retries} attempts: {e}")
+    raise JudgeError(f"judge request failed: {last}")
 
 
 def _extract_verdict(text):
@@ -108,7 +109,7 @@ def _extract_verdict(text):
     e = text.rfind("}")
     if s != -1 and e != -1 and e > s:
         try:
-            obj = json.loads(text[s:e + 1])
+            obj = json.loads(text[s : e + 1])
             verdict = str(obj.get("verdict", "")).upper().strip()
             reason = str(obj.get("reason", "")).strip()
             return verdict == "PASS", reason or "(no reason given)"
@@ -130,9 +131,7 @@ def judge_case(provider, model, api_key, utterance, expected_outcome, actual_res
         return ok, "mock judge: response present" if ok else "mock judge: empty response"
 
     if not api_key:
-        raise JudgeError(
-            "no API key for judge provider '%s' (set the matching AGENTPROBE_*_API_KEY)"
-            % provider)
+        raise JudgeError(f"no API key for judge provider '{provider}' (set the matching AGENTPROBE_*_API_KEY)")
 
     user = build_user_prompt(utterance, expected_outcome, actual_response)
 
@@ -175,9 +174,7 @@ def judge_case(provider, model, api_key, utterance, expected_outcome, actual_res
         text = "".join(p.get("text", "") for p in parts if isinstance(p, dict))
         return _extract_verdict(text)
 
-    raise JudgeError(
-        "unknown judge provider: %s (supported: openai, anthropic, mock, handoff)"
-        % provider)
+    raise JudgeError(f"unknown judge provider: {provider} (supported: openai, anthropic, mock, handoff)")
 
 
 # ── handoff (Claude Code file-handoff) protocol ───────────────────────────────
@@ -199,17 +196,17 @@ HANDOFF_INSTRUCTIONS = (
 def task_package_path(out_path, agent_name):
     """Path for <agent>-judge-task.json next to --out (or cwd if no --out)."""
     d = os.path.dirname(os.path.abspath(out_path)) if out_path else os.getcwd()
-    return os.path.join(d, "%s-judge-task.json" % agent_name)
+    return os.path.join(d, f"{agent_name}-judge-task.json")
 
 
 def judging_md_path(out_path, agent_name):
     d = os.path.dirname(os.path.abspath(out_path)) if out_path else os.getcwd()
-    return os.path.join(d, "%s-JUDGING.md" % agent_name)
+    return os.path.join(d, f"{agent_name}-JUDGING.md")
 
 
 def verdicts_path(out_path, agent_name):
     d = os.path.dirname(os.path.abspath(out_path)) if out_path else os.getcwd()
-    return os.path.join(d, "%s-judge-verdicts.json" % agent_name)
+    return os.path.join(d, f"{agent_name}-judge-verdicts.json")
 
 
 def build_task_package(agent_name, org_alias, spec, raw_results):
@@ -224,14 +221,16 @@ def build_task_package(agent_name, org_alias, spec, raw_results):
     for raw in raw_results:
         i = raw["number"]
         spec_case = cases_by_num.get(i, {})
-        cases.append({
-            "id": i,
-            "utterance": raw.get("utterance", ""),
-            "expected_outcome": spec_case.get("expectedOutcome") or "",
-            "actual_response": raw.get("response", "") or "",
-            "actual_topic": raw.get("topic"),
-            "actual_actions": list(raw.get("actions") or []),
-        })
+        cases.append(
+            {
+                "id": i,
+                "utterance": raw.get("utterance", ""),
+                "expected_outcome": spec_case.get("expectedOutcome") or "",
+                "actual_response": raw.get("response", "") or "",
+                "actual_topic": raw.get("topic"),
+                "actual_actions": list(raw.get("actions") or []),
+            }
+        )
     return {
         "schema": TASK_SCHEMA,
         "agent": agent_name,
@@ -253,38 +252,46 @@ def render_judging_md(agent_name, task_path, verdicts_path_str):
     task_base = os.path.basename(task_path)
     verdicts_base = os.path.basename(verdicts_path_str)
     lines = []
-    lines.append("# Judging `%s` with Claude Code" % agent_name)
+    lines.append(f"# Judging `{agent_name}` with Claude Code")
     lines.append("")
-    lines.append("This agent runs on the **InternalCopilot** path, which needs an "
-                 "LLM to grade each response (PASS/FAIL). Instead of a raw API key, "
-                 "you can use **Claude Code** as the judge.")
+    lines.append(
+        "This agent runs on the **InternalCopilot** path, which needs an "
+        "LLM to grade each response (PASS/FAIL). Instead of a raw API key, "
+        "you can use **Claude Code** as the judge."
+    )
     lines.append("")
-    lines.append("`agentforce-probe` already replayed the agent and wrote the judging "
-                 "materials. **No secrets are in any of these files** — only test "
-                 "utterances, expected outcomes, and the agent's responses.")
+    lines.append(
+        "`agentforce-probe` already replayed the agent and wrote the judging "
+        "materials. **No secrets are in any of these files** — only test "
+        "utterances, expected outcomes, and the agent's responses."
+    )
     lines.append("")
     lines.append("## Step 1 — paste this to Claude Code (open in this repo)")
     lines.append("")
-    lines.append("> You are a strict QA grader. Read the file `%s` in this "
-                 "repository. It is JSON of schema `%s` with a `rubric` and a list "
-                 "of `cases`, each having `id`, `utterance`, `expected_outcome`, "
-                 "`actual_response`, `actual_topic`, and `actual_actions`."
-                 % (task_base, TASK_SCHEMA))
+    lines.append(
+        f"> You are a strict QA grader. Read the file `{task_base}` in this "
+        f"repository. It is JSON of schema `{TASK_SCHEMA}` with a `rubric` and a list "
+        "of `cases`, each having `id`, `utterance`, `expected_outcome`, "
+        "`actual_response`, `actual_topic`, and `actual_actions`."
+    )
     lines.append("> ")
-    lines.append("> For **every** case, apply the rubric in the file and decide "
-                 "whether `actual_response` satisfies `expected_outcome`. The "
-                 "verdict must be exactly `PASS` or `FAIL` (uppercase, nothing "
-                 "else). Be conservative: if the agent leaks protected data, fails "
-                 "a security gate, fabricates figures, or does not do what the "
-                 "expected outcome requires, the verdict is `FAIL`.")
+    lines.append(
+        "> For **every** case, apply the rubric in the file and decide "
+        "whether `actual_response` satisfies `expected_outcome`. The "
+        "verdict must be exactly `PASS` or `FAIL` (uppercase, nothing "
+        "else). Be conservative: if the agent leaks protected data, fails "
+        "a security gate, fabricates figures, or does not do what the "
+        "expected outcome requires, the verdict is `FAIL`."
+    )
     lines.append("> ")
-    lines.append("> Write the results to a new file `%s` in this repository, "
-                 "using exactly this JSON schema:" % verdicts_base)
+    lines.append(
+        f"> Write the results to a new file `{verdicts_base}` in this repository, using exactly this JSON schema:"
+    )
     lines.append("> ")
     lines.append("> ```json")
     lines.append("> {")
-    lines.append('>   "schema": "%s",' % VERDICTS_SCHEMA)
-    lines.append('>   "agent": "%s",' % agent_name)
+    lines.append(f'>   "schema": "{VERDICTS_SCHEMA}",')
+    lines.append(f'>   "agent": "{agent_name}",')
     lines.append('>   "verdicts": [')
     lines.append('>     {"id": 1, "verdict": "PASS", "reason": "..."},')
     lines.append('>     {"id": 2, "verdict": "FAIL", "reason": "..."}')
@@ -292,23 +299,27 @@ def render_judging_md(agent_name, task_path, verdicts_path_str):
     lines.append("> }")
     lines.append("> ```")
     lines.append("> ")
-    lines.append("> Rules: include exactly one entry per case `id` (do not skip "
-                 "any), `verdict` is only `PASS` or `FAIL`, keep `reason` short. "
-                 "Do not add or remove fields.")
+    lines.append(
+        "> Rules: include exactly one entry per case `id` (do not skip "
+        "any), `verdict` is only `PASS` or `FAIL`, keep `reason` short. "
+        "Do not add or remove fields."
+    )
     lines.append("")
     lines.append("## Step 2 — collect the verdicts into evidence")
     lines.append("")
-    lines.append("Once Claude Code has written `%s`, run:" % verdicts_base)
+    lines.append(f"Once Claude Code has written `{verdicts_base}`, run:")
     lines.append("")
     lines.append("```bash")
-    lines.append("python3 -m agentforce_probe run --org <alias> --agent %s \\" % agent_name)
-    lines.append("  --spec <spec.yaml> --from-verdicts %s" % verdicts_base)
+    lines.append(f"python3 -m agentforce_probe run --org <alias> --agent {agent_name} \\")
+    lines.append(f"  --spec <spec.yaml> --from-verdicts {verdicts_base}")
     lines.append("```")
     lines.append("")
-    lines.append("That reads the verdicts back, applies the assertion-filtering "
-                 "rules, and writes the unified evidence markdown. It validates "
-                 "that every case id has a verdict and that each verdict is "
-                 "PASS/FAIL.")
+    lines.append(
+        "That reads the verdicts back, applies the assertion-filtering "
+        "rules, and writes the unified evidence markdown. It validates "
+        "that every case id has a verdict and that each verdict is "
+        "PASS/FAIL."
+    )
     lines.append("")
     return "\n".join(lines) + "\n"
 
@@ -325,13 +336,13 @@ class HandoffError(JudgeError):
 def load_task_package(path):
     """Read + lightly validate a judge-task.json. Returns the parsed dict."""
     if not os.path.exists(path):
-        raise HandoffError("judge task package not found: %s" % path)
-    with open(path, "r", encoding="utf-8") as fh:
+        raise HandoffError(f"judge task package not found: {path}")
+    with open(path, encoding="utf-8") as fh:
         obj = json.load(fh)
     if not isinstance(obj, dict):
-        raise HandoffError("judge task package must be a JSON object: %s" % path)
+        raise HandoffError(f"judge task package must be a JSON object: {path}")
     if not isinstance(obj.get("cases"), list) or not obj["cases"]:
-        raise HandoffError("judge task package has no cases[]: %s" % path)
+        raise HandoffError(f"judge task package has no cases[]: {path}")
     return obj
 
 
@@ -342,17 +353,16 @@ def load_verdicts(path):
     list[str]). Raises HandoffError on hard errors (bad shape, illegal verdict).
     """
     if not os.path.exists(path):
-        raise HandoffError("verdicts file not found: %s" % path)
-    with open(path, "r", encoding="utf-8") as fh:
+        raise HandoffError(f"verdicts file not found: {path}")
+    with open(path, encoding="utf-8") as fh:
         obj = json.load(fh)
     if not isinstance(obj, dict):
-        raise HandoffError("verdicts file must be a JSON object: %s" % path)
+        raise HandoffError(f"verdicts file must be a JSON object: {path}")
 
     warnings = []
     schema = obj.get("schema")
     if schema != VERDICTS_SCHEMA:
-        warnings.append(
-            "verdicts schema is %r, expected %r" % (schema, VERDICTS_SCHEMA))
+        warnings.append(f"verdicts schema is {schema!r}, expected {VERDICTS_SCHEMA!r}")
 
     verdicts = obj.get("verdicts")
     if not isinstance(verdicts, list):
@@ -361,19 +371,19 @@ def load_verdicts(path):
     by_id = {}
     for idx, v in enumerate(verdicts):
         if not isinstance(v, dict):
-            raise HandoffError("verdicts[%d] is not an object" % idx)
+            raise HandoffError(f"verdicts[{idx}] is not an object")
         if "id" not in v:
-            raise HandoffError("verdicts[%d] missing 'id'" % idx)
+            raise HandoffError(f"verdicts[{idx}] missing 'id'")
         try:
             cid = int(v["id"])
         except (TypeError, ValueError):
-            raise HandoffError("verdicts[%d] has non-integer id %r" % (idx, v.get("id")))
+            raise HandoffError(f"verdicts[{idx}] has non-integer id {v.get('id')!r}")
         verdict = str(v.get("verdict", "")).upper().strip()
         if verdict not in ("PASS", "FAIL"):
             raise HandoffError(
-                "verdicts[%d] (id=%s) has illegal verdict %r — must be PASS or FAIL"
-                % (idx, cid, v.get("verdict")))
+                f"verdicts[{idx}] (id={cid}) has illegal verdict {v.get('verdict')!r} — must be PASS or FAIL"
+            )
         if cid in by_id:
-            raise HandoffError("duplicate verdict for id %d" % cid)
+            raise HandoffError(f"duplicate verdict for id {cid}")
         by_id[cid] = {"verdict": verdict, "reason": str(v.get("reason", "")).strip()}
     return by_id, warnings

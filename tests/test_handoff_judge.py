@@ -1,4 +1,5 @@
 """Tests for the Claude Code file-handoff judge protocol (schema + validation)."""
+
 import json
 
 import pytest
@@ -37,14 +38,18 @@ def test_build_task_package_shape_and_no_secrets():
 
 def test_load_verdicts_roundtrip(tmp_path):
     p = tmp_path / "v.json"
-    p.write_text(json.dumps({
-        "schema": judge.VERDICTS_SCHEMA,
-        "agent": "Demo",
-        "verdicts": [
-            {"id": 1, "verdict": "PASS", "reason": "ok"},
-            {"id": 2, "verdict": "FAIL", "reason": "leaked"},
-        ],
-    }))
+    p.write_text(
+        json.dumps(
+            {
+                "schema": judge.VERDICTS_SCHEMA,
+                "agent": "Demo",
+                "verdicts": [
+                    {"id": 1, "verdict": "PASS", "reason": "ok"},
+                    {"id": 2, "verdict": "FAIL", "reason": "leaked"},
+                ],
+            }
+        )
+    )
     by_id, warnings = judge.load_verdicts(str(p))
     assert warnings == []
     assert by_id[1]["verdict"] == "PASS"
@@ -53,41 +58,52 @@ def test_load_verdicts_roundtrip(tmp_path):
 
 def test_load_verdicts_rejects_illegal_verdict(tmp_path):
     p = tmp_path / "v.json"
-    p.write_text(json.dumps({
-        "schema": judge.VERDICTS_SCHEMA,
-        "verdicts": [{"id": 1, "verdict": "MAYBE", "reason": "?"}],
-    }))
+    p.write_text(
+        json.dumps(
+            {
+                "schema": judge.VERDICTS_SCHEMA,
+                "verdicts": [{"id": 1, "verdict": "MAYBE", "reason": "?"}],
+            }
+        )
+    )
     with pytest.raises(judge.HandoffError):
         judge.load_verdicts(str(p))
 
 
 def test_load_verdicts_rejects_duplicate_id(tmp_path):
     p = tmp_path / "v.json"
-    p.write_text(json.dumps({
-        "schema": judge.VERDICTS_SCHEMA,
-        "verdicts": [
-            {"id": 1, "verdict": "PASS", "reason": "a"},
-            {"id": 1, "verdict": "FAIL", "reason": "b"},
-        ],
-    }))
+    p.write_text(
+        json.dumps(
+            {
+                "schema": judge.VERDICTS_SCHEMA,
+                "verdicts": [
+                    {"id": 1, "verdict": "PASS", "reason": "a"},
+                    {"id": 1, "verdict": "FAIL", "reason": "b"},
+                ],
+            }
+        )
+    )
     with pytest.raises(judge.HandoffError):
         judge.load_verdicts(str(p))
 
 
 def test_load_verdicts_schema_mismatch_warns(tmp_path):
     p = tmp_path / "v.json"
-    p.write_text(json.dumps({
-        "schema": "wrong/schema@9",
-        "verdicts": [{"id": 1, "verdict": "PASS", "reason": "a"}],
-    }))
+    p.write_text(
+        json.dumps(
+            {
+                "schema": "wrong/schema@9",
+                "verdicts": [{"id": 1, "verdict": "PASS", "reason": "a"}],
+            }
+        )
+    )
     by_id, warnings = judge.load_verdicts(str(p))
     assert by_id[1]["verdict"] == "PASS"
     assert any("schema" in w for w in warnings)
 
 
 def test_render_judging_md_mentions_files():
-    md = judge.render_judging_md("Demo", "/x/Demo-judge-task.json",
-                                 "/x/Demo-judge-verdicts.json")
+    md = judge.render_judging_md("Demo", "/x/Demo-judge-task.json", "/x/Demo-judge-verdicts.json")
     assert "Demo-judge-task.json" in md
     assert "Demo-judge-verdicts.json" in md
     assert "PASS" in md and "FAIL" in md

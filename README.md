@@ -49,7 +49,7 @@ diagnostics only ever expose length + JWT segment count — never bytes.
 From source (until published to PyPI):
 
 ```bash
-git clone https://github.com/raykuonz/agentforce-probe
+git clone https://github.com/raykuo/agentforce-probe
 cd agentforce-probe
 pip install -e .
 ```

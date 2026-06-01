@@ -38,6 +38,7 @@ Known-gotchas baked in (do not re-guess these — they are battle-tested):
      "Invalid Config" = auth fully OK but planner config is broken (usually an
      action missing its inputs block).
 """
+
 import json
 import socket
 import time
@@ -97,7 +98,7 @@ def _http(method, url, *, headers=None, data=None, timeout=60, retries=3):
                 last_exc = e
                 continue
             return e.code, body
-        except (urllib.error.URLError, socket.timeout, socket.gaierror) as e:
+        except (TimeoutError, urllib.error.URLError, socket.gaierror) as e:
             # Transient network: EAI_AGAIN (DNS), timeouts, conn reset.
             last_exc = e
             if attempt < retries - 1:
@@ -117,11 +118,13 @@ def mint_token(instance_url, consumer_key, consumer_secret, *, timeout=60):
     for all subsequent calls.
     """
     url = instance_url.rstrip("/") + "/services/oauth2/token"
-    form = urllib.parse.urlencode({
-        "grant_type": "client_credentials",
-        "client_id": consumer_key,
-        "client_secret": consumer_secret,
-    }).encode("utf-8")
+    form = urllib.parse.urlencode(
+        {
+            "grant_type": "client_credentials",
+            "client_id": consumer_key,
+            "client_secret": consumer_secret,
+        }
+    ).encode("utf-8")
 
     for attempt in range(3):
         req = urllib.request.Request(url, data=form, method="POST")
@@ -138,7 +141,7 @@ def mint_token(instance_url, consumer_key, consumer_secret, *, timeout=60):
                 pass
             # Don't leak; body here is an OAuth error description, safe-ish but keep short.
             raise AgentApiError(f"mint failed (HTTP {e.code}): {body[:300]}", status=e.code)
-        except (urllib.error.URLError, socket.timeout, socket.gaierror) as e:
+        except (TimeoutError, urllib.error.URLError, socket.gaierror) as e:
             if attempt < 2:
                 time.sleep(1.5 * (attempt + 1))
                 continue
@@ -149,18 +152,15 @@ def mint_token(instance_url, consumer_key, consumer_secret, *, timeout=60):
     if not token:
         raise AgentApiError("mint response had no access_token")
     if not api_instance_url:
-        raise AgentApiError(
-            "mint response had no api_instance_url (cannot locate Agent API host)"
-        )
+        raise AgentApiError("mint response had no api_instance_url (cannot locate Agent API host)")
     shape = token_shape(token)
     if not shape["looks_like_jwt"]:
         raise AgentApiError(
-            "minted token is OPAQUE, not a JWT (segments=%d len=%d). Enable "
+            f"minted token is OPAQUE, not a JWT (segments={shape['segments']} len={shape['len']}). Enable "
             "isNamedUserJwtEnabled on the ECA — opaque tokens make the Agent API "
-            "session endpoint 404." % (shape["segments"], shape["len"])
+            "session endpoint 404."
         )
-    return {"token": token, "api_instance_url": api_instance_url.rstrip("/"),
-            "shape": shape}
+    return {"token": token, "api_instance_url": api_instance_url.rstrip("/"), "shape": shape}
 
 
 class AgentApiSession:
@@ -183,7 +183,7 @@ class AgentApiSession:
 
     def start(self, *, timeout=60):
         """Create a headless session (bypassUser:false). Returns session_id."""
-        url = "%s/einstein/ai-agent/v1/agents/%s/sessions" % (self._api, self._bot)
+        url = f"{self._api}/einstein/ai-agent/v1/agents/{self._bot}/sessions"
         body = {
             "externalSessionKey": str(uuid.uuid4()),
             "instanceConfig": {"endpoint": self._api},
@@ -195,21 +195,28 @@ class AgentApiSession:
             raise AgentApiError(
                 "session create 404 (empty/not-found). Wrong host or opaque "
                 "token. Confirm api_instance_url from mint and JWT shape.",
-                status=404, body=text)
+                status=404,
+                body=text,
+            )
         if status == 400 and "user id" in (text or "").lower():
             raise AgentApiError(
                 "session create 400 'Invalid user ID' — set bypassUser:false and "
                 "do not pass userId; run-as comes from the ECA's "
-                "clientCredentialsFlowUser.", status=400, body=text)
+                "clientCredentialsFlowUser.",
+                status=400,
+                body=text,
+            )
         if status == 412:
             raise AgentApiError(
                 "session create 412 'Invalid Config' — auth is OK but the planner "
                 "config is broken (commonly an action missing its inputs block).",
-                status=412, body=text)
+                status=412,
+                body=text,
+            )
         if status not in (200, 201):
             raise AgentApiError(
-                "session create failed (HTTP %s): %s" % (status, (text or "")[:300]),
-                status=status, body=text)
+                "session create failed (HTTP {}): {}".format(status, (text or "")[:300]), status=status, body=text
+            )
         try:
             obj = json.loads(text)
         except Exception:
@@ -224,13 +231,13 @@ class AgentApiSession:
         if not self.session_id:
             raise AgentApiError("no active session; call start() first")
         self._seq += 1
-        url = "%s/einstein/ai-agent/v1/sessions/%s/messages" % (self._api, self.session_id)
+        url = f"{self._api}/einstein/ai-agent/v1/sessions/{self.session_id}/messages"
         body = {"message": {"sequenceId": self._seq, "type": "Text", "text": text}}
         status, raw = _http("POST", url, headers=self._auth_headers(), data=body, timeout=timeout)
         if status not in (200, 201):
             raise AgentApiError(
-                "send message failed (HTTP %s): %s" % (status, (raw or "")[:300]),
-                status=status, body=raw)
+                "send message failed (HTTP {}): {}".format(status, (raw or "")[:300]), status=status, body=raw
+            )
         try:
             obj = json.loads(raw)
         except Exception:
@@ -241,7 +248,7 @@ class AgentApiSession:
         """End the session (best-effort; ignores failures)."""
         if not self.session_id:
             return
-        url = "%s/einstein/ai-agent/v1/sessions/%s" % (self._api, self.session_id)
+        url = f"{self._api}/einstein/ai-agent/v1/sessions/{self.session_id}"
         try:
             _http("DELETE", url, headers=self._auth_headers(), timeout=timeout, retries=1)
         except Exception:

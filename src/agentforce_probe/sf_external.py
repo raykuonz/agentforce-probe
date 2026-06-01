@@ -14,6 +14,7 @@ Verified flow (battle-tested against real ExternalCopilot agents):
         result.testCases, each case's asserts under testResults with names
         topic_assertion / actions_assertion / output_validation)
 """
+
 import time
 
 from . import sfcli
@@ -42,18 +43,28 @@ def _find_job_id(obj):
 def create_test_definition(api_name, spec_path, org, *, timeout=300):
     """Deploy the test definition. Idempotent-ish; failures surface to caller."""
     sfcli.run_sf(
-        ["agent", "test", "create", "--api-name", api_name,
-         "--spec", spec_path, "--target-org", org, "--no-prompt"],
-        timeout=timeout, check=False,
+        ["agent", "test", "create", "--api-name", api_name, "--spec", spec_path, "--target-org", org, "--no-prompt"],
+        timeout=timeout,
+        check=False,
     )
 
 
 def run_test(api_name, org, *, client_wait_min=2, timeout=600):
     """Kick off the run; returns the job id."""
     obj = sfcli.run_sf_json(
-        ["agent", "test", "run", "--api-name", api_name,
-         "--wait", str(client_wait_min), "--result-format", "json",
-         "--target-org", org],
+        [
+            "agent",
+            "test",
+            "run",
+            "--api-name",
+            api_name,
+            "--wait",
+            str(client_wait_min),
+            "--result-format",
+            "json",
+            "--target-org",
+            org,
+        ],
         timeout=timeout,
     )
     job_id = _find_job_id(obj)
@@ -67,8 +78,7 @@ def fetch_results(job_id, org, *, attempts=20, poll_secs=15, timeout=300):
     last = None
     for _ in range(attempts):
         obj = sfcli.run_sf_json(
-            ["agent", "test", "results", "--job-id", job_id,
-             "--result-format", "json", "--target-org", org],
+            ["agent", "test", "results", "--job-id", job_id, "--result-format", "json", "--target-org", org],
             timeout=timeout,
         )
         result = obj.get("result", obj)
@@ -79,7 +89,7 @@ def fetch_results(job_id, org, *, attempts=20, poll_secs=15, timeout=300):
         time.sleep(poll_secs)
     if last is not None:
         return last
-    raise ExternalPathError("results never completed for job %s" % job_id)
+    raise ExternalPathError(f"results never completed for job {job_id}")
 
 
 def map_results_to_cases(results, spec):
@@ -99,7 +109,7 @@ def map_results_to_cases(results, spec):
         actual_topic = gen.get("topic")
         for tr in c.get("testResults", []):
             name = (tr.get("name") or "").lower()
-            ok = (tr.get("result") == "PASS")
+            ok = tr.get("result") == "PASS"
             if "topic" in name:
                 topic_pass = ok
                 actual_topic = actual_topic or tr.get("actualValue")
@@ -109,11 +119,18 @@ def map_results_to_cases(results, spec):
                     actual_actions = [tr.get("actualValue")]
             else:  # output_validation / anything else => primary signal
                 output_pass = ok
-        scored.append(score_case(
-            spec_case, c.get("testNumber", len(scored) + 1),
-            topic_pass=topic_pass, actions_pass=actions_pass, output_pass=output_pass,
-            response=response, actual_topic=actual_topic, actual_actions=actual_actions,
-        ))
+        scored.append(
+            score_case(
+                spec_case,
+                c.get("testNumber", len(scored) + 1),
+                topic_pass=topic_pass,
+                actions_pass=actions_pass,
+                output_pass=output_pass,
+                response=response,
+                actual_topic=actual_topic,
+                actual_actions=actual_actions,
+            )
+        )
     return scored
 
 

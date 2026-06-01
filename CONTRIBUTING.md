@@ -22,7 +22,7 @@ it small, local, and privacy-first are very welcome.
 ## Dev setup
 
 ```bash
-git clone https://github.com/OWNER/agentforce-probe
+git clone https://github.com/raykuonz/agentforce-probe
 cd agentforce-probe
 pip install -e ".[dev]"
 ```

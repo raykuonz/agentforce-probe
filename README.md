@@ -49,7 +49,7 @@ diagnostics only ever expose length + JWT segment count — never bytes.
 From source (until published to PyPI):
 
 ```bash
-git clone https://github.com/OWNER/agentforce-probe
+git clone https://github.com/raykuonz/agentforce-probe
 cd agentforce-probe
 pip install -e .
 ```
@@ -66,8 +66,9 @@ The only runtime dependency is `pyyaml`.
 
 ## Configure secrets (`.env`)
 
-Only the **InternalCopilot** path needs secrets. Copy the template and fill it
-in (the file is gitignored):
+Only the **InternalCopilot** path needs secrets. Copy the template into the
+directory you run `agentforce-probe` from and fill it in (the file is
+gitignored):
 
 ```bash
 cp .env.example .env
@@ -79,7 +80,8 @@ cp .env.example .env
 ```
 
 Environment variables take precedence over `.env`. The ExternalCopilot path
-needs **none** of these (Testing Center judges for you).
+needs **none** of these (Testing Center judges for you). You can also point at a
+specific file with `AGENTPROBE_ENV_FILE=/path/to/.env`.
 
 ### Prerequisite for the Internal path — the External Client App
 

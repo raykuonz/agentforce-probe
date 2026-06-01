@@ -29,9 +29,30 @@ DEFAULT_JUDGE = "handoff"
 
 
 def _env_path():
-    # .env one level up from this package dir (agentforce_probe/ -> repo/.env)
+    """Locate the .env file.
+
+    Priority:
+      1. AGENTPROBE_ENV_FILE (explicit override), if set.
+      2. .env in the current working directory (where you run the command —
+         this is the normal place to put it).
+      3. .env one directory above the installed package (covers a flat,
+         non-src checkout where the package sits at the repo root).
+
+    Returns the first path that exists; if none exist, returns the cwd/.env
+    path (so diagnostics point at the place you most likely meant).
+    """
+    override = os.environ.get("AGENTPROBE_ENV_FILE")
+    if override:
+        return override
+
+    cwd_env = os.path.join(os.getcwd(), ".env")
     here = os.path.dirname(os.path.abspath(__file__))
-    return os.path.join(os.path.dirname(here), ".env")
+    pkg_parent_env = os.path.join(os.path.dirname(here), ".env")
+
+    for candidate in (cwd_env, pkg_parent_env):
+        if os.path.exists(candidate):
+            return candidate
+    return cwd_env
 
 
 def _parse_env_file(path):

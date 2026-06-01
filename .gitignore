@@ -1,0 +1,31 @@
+# ── secrets & generated artifacts (NEVER commit these) ──────────────────────
+.env
+.env.*
+!.env.example
+*.token
+*.jwt
+*secret*
+*credential*
+
+# generated evidence (regenerate locally)
+*-evidence.md
+evidence-out/
+
+# handoff judge run artifacts (contain test data; regenerate locally)
+*-judge-task.json
+*-judge-verdicts.json
+*-JUDGING.md
+
+# python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/

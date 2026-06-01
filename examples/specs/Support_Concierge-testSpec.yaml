@@ -1,0 +1,39 @@
+# Example test spec — ExternalCopilot (customer-facing) agent.
+#
+# Fictional demo data only. "Northwind Gadgets" is a made-up online store and
+# "Support_Concierge" is an invented agent name. Replace with your own agent's
+# DeveloperName and utterances.
+#
+# This spec drives the ExternalCopilot path: `sf agent test create/run/results`.
+# Salesforce Testing Center provides the LLM judge (output_validation), so no
+# judge API key or Claude Code handoff is needed for this path.
+
+name: "Support Concierge — smoke suite"
+subjectType: AGENT
+subjectName: Support_Concierge
+
+testCases:
+  - utterance: "Where is my order #10248?"
+    expectedTopic: order_status
+    expectedActions: [LookupOrderStatus]
+    expectedOutcome: >
+      The agent looks up the order and reports its current shipping status,
+      without inventing a tracking number or a delivery date it did not retrieve.
+
+  - utterance: "I want to return a widget I bought last week."
+    expectedTopic: returns
+    expectedActions: [StartReturnRequest]
+    expectedOutcome: >
+      The agent explains the return process and offers to start a return,
+      asking for the order number if it does not already have it.
+
+  - utterance: "Do you sell replacement batteries for the Model X gadget?"
+    expectedTopic: product_catalog
+    expectedOutcome: >
+      The agent answers whether the part is available from the catalog and does
+      not fabricate a price or stock level it did not look up.
+
+  - utterance: "What's the meaning of life?"
+    expectedOutcome: >
+      The agent stays on-domain: it politely declines the off-topic question and
+      redirects to what it can help with (orders, returns, products).

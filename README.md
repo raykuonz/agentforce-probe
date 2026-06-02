@@ -89,16 +89,13 @@ about what has and hasn't been validated.
   effect on the score).
 - **`--from-results` accepts External-shaped payloads only** (offline re-scoring
   of `sf agent test results`); there's no offline replay for the Internal path.
-- **No PyPI package yet** — install from source (`pip install -e .`).
 
 ## Install
 
-From source (until published to PyPI):
+From [PyPI](https://pypi.org/project/agentforce-probe/):
 
 ```bash
-git clone https://github.com/raykuonz/agentforce-probe
-cd agentforce-probe
-pip install -e .
+pip install agentforce-probe
 ```
 
 This installs the `agentforce-probe` console command. You can also run it as a
@@ -110,6 +107,14 @@ python3 -m agentforce_probe --help
 ```
 
 The only runtime dependency is `pyyaml`.
+
+To install from source instead (e.g. to track `main` or hack on it):
+
+```bash
+git clone https://github.com/raykuonz/agentforce-probe
+cd agentforce-probe
+pip install -e .
+```
 
 ## Configure secrets (`.env`)
 

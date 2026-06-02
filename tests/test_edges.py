@@ -124,7 +124,7 @@ def test_run_session_real_mint_path(monkeypatch):
     )
 
     class _S:
-        def __init__(self, *a):
+        def __init__(self, *a, **kw):
             pass
 
         def start(self):
@@ -159,7 +159,7 @@ def test_run_internal_with_mock_judge(monkeypatch):
     )
 
     class _S:
-        def __init__(self, *a):
+        def __init__(self, *a, **kw):
             pass
 
         def start(self):
@@ -193,3 +193,45 @@ def test_session_close_swallows_http_error(monkeypatch):
     monkeypatch.setattr(agent_api, "_http", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("boom")))
     s.close()  # must not raise
     assert s.session_id is None
+
+
+# ── regression: instanceConfig.endpoint must be My Domain, not the API host ──
+# A live employee-agent run proved that putting the Agent API host (api_instance_url,
+# e.g. https://test.api.salesforce.com) in instanceConfig.endpoint makes session
+# create fail with HTTP 500 EngineConfigLookupException. The official Agent API
+# troubleshooting doc says endpoint must be the org's My Domain URL. This test locks
+# that contract in so the fix can't silently regress.
+def test_session_start_uses_my_domain_endpoint(monkeypatch):
+    captured = {}
+
+    def fake_http(method, url, *, headers=None, data=None, timeout=60, retries=3):
+        captured["url"] = url
+        captured["data"] = data
+        return 200, '{"sessionId": "sid-123"}'
+
+    monkeypatch.setattr(agent_api, "_http", fake_http)
+    s = agent_api.AgentApiSession(
+        "https://test.api.salesforce.com",
+        "hdr." + "a" * 900 + ".sig",
+        "0XxoB000000CIkLSAW",
+        my_domain_url="https://orgfarm-abc.test2.my.pc-rnd.salesforce.com",
+    )
+    sid = s.start()
+    assert sid == "sid-123"
+    # HTTP host is the Agent API host
+    assert captured["url"].startswith("https://test.api.salesforce.com/einstein/ai-agent/")
+    # but instanceConfig.endpoint is the My Domain URL (the actual fix)
+    assert captured["data"]["instanceConfig"]["endpoint"] == "https://orgfarm-abc.test2.my.pc-rnd.salesforce.com"
+
+
+def test_session_start_endpoint_falls_back_to_api_host_when_no_my_domain(monkeypatch):
+    captured = {}
+
+    def fake_http(method, url, *, headers=None, data=None, timeout=60, retries=3):
+        captured["data"] = data
+        return 200, '{"sessionId": "sid"}'
+
+    monkeypatch.setattr(agent_api, "_http", fake_http)
+    s = agent_api.AgentApiSession("https://test.api.salesforce.com", "hdr." + "a" * 900 + ".sig", "0Xx")
+    s.start()
+    assert captured["data"]["instanceConfig"]["endpoint"] == "https://test.api.salesforce.com"

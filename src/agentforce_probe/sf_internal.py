@@ -57,7 +57,9 @@ def run_session(
         shape = minted["shape"]
         _diag(f"minted token: segments={shape['segments']} len={shape['len']} (JWT ok)")
         _diag(f"agent api host: {minted['api_instance_url']}")
-        session = agent_api.AgentApiSession(minted["api_instance_url"], minted["token"], bot_definition_id)
+        session = agent_api.AgentApiSession(
+            minted["api_instance_url"], minted["token"], bot_definition_id, my_domain_url=instance_url
+        )
 
     sid = session.start()
     _diag(f"session started: {sid}")

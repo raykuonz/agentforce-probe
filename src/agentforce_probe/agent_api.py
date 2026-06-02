@@ -166,8 +166,14 @@ def mint_token(instance_url, consumer_key, consumer_secret, *, timeout=60):
 class AgentApiSession:
     """One headless Agent API session against an InternalCopilot agent."""
 
-    def __init__(self, api_instance_url, token, bot_definition_id):
+    def __init__(self, api_instance_url, token, bot_definition_id, my_domain_url=None):
         self._api = api_instance_url.rstrip("/")
+        # instanceConfig.endpoint MUST be the org's My Domain URL, NOT the Agent
+        # API host (api_instance_url). Passing the api host here causes session
+        # create to fail with HTTP 500 EngineConfigLookupException — confirmed by
+        # the official Agent API troubleshooting doc and an A/B live test against
+        # an employee agent. Fall back to the api host only if no My Domain given.
+        self._endpoint = (my_domain_url or api_instance_url).rstrip("/")
         self._token = token  # runtime-only; never logged
         self._bot = bot_definition_id
         self.session_id = None
@@ -186,7 +192,7 @@ class AgentApiSession:
         url = f"{self._api}/einstein/ai-agent/v1/agents/{self._bot}/sessions"
         body = {
             "externalSessionKey": str(uuid.uuid4()),
-            "instanceConfig": {"endpoint": self._api},
+            "instanceConfig": {"endpoint": self._endpoint},
             "streamingCapabilities": {"chunkTypes": ["Text"]},
             "bypassUser": False,
         }

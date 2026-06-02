@@ -116,6 +116,27 @@ cd agentforce-probe
 pip install -e .
 ```
 
+### Install the Claude skill (no CLI needed)
+
+This repo ships a [Claude Code](https://docs.anthropic.com/claude/docs/agent-skills)
+skill (`probe-agentforce-agents`) that teaches an agent when and how to drive
+`agentforce-probe`. Install it into your agent in one command with
+[`vercel-labs/skills`](https://github.com/vercel-labs/skills) — no clone, no
+install, just `npx`:
+
+```bash
+# Preview the skill without installing
+npx skills add raykuonz/agentforce-probe --list
+
+# Install it globally into Claude Code
+npx skills add raykuonz/agentforce-probe -g -a claude-code -y
+```
+
+It also works with Cursor, Codex, OpenCode, and
+[50+ other agents](https://github.com/vercel-labs/skills#supported-agents) — drop
+the `-a claude-code` flag to pick interactively. The skill assumes the
+`agentforce-probe` CLI is installed (see above).
+
 ## Configure secrets (`.env`)
 
 Only the **InternalCopilot** path needs secrets. Copy the template into the

@@ -3,6 +3,24 @@
 **A local, privacy-first CLI to run automated tests against Salesforce
 Agentforce agents — and score the results into evidence.**
 
+> **TL;DR** — Salesforce's Testing Center can score your *customer-facing*
+> agents but **silently can't touch your employee-facing ones**.
+> `agentforce-probe` tests **both** from one command and hands you a single
+> evidence report. It runs entirely on your machine, sends nothing to third
+> parties, and needs **no API key** to get started.
+
+### Do I need to set anything up? (the 30-second version)
+
+| You're testing… | What you need | headless API / ECA? |
+| --- | --- | --- |
+| **ExternalCopilot** (customer/service agents) | just an `sf`-authenticated org | ❌ none — Testing Center judges for you, zero secrets |
+| **InternalCopilot** (employee agents) | the above **+ a one-time External Client App** (consumer key/secret in `.env`) | ✅ yes — this is the headless path Testing Center can't do |
+| *Optional:* grade with a live LLM judge | an OpenAI/Anthropic API key | the default judge is a **no-key Claude Code handoff** |
+
+So: **External agents work out of the box.** The only real setup is a one-time
+ECA for the Internal path — and even then the judge needs no API key by default.
+Full steps are in [Configure secrets](#configure-secrets-env).
+
 `agentforce-probe` auto-detects the agent type and picks the right path:
 
 - **ExternalCopilot** (customer/service agents) → drives

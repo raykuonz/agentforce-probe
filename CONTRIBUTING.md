@@ -14,7 +14,7 @@ Thanks for taking the time to contribute.
 
 ```bash
 # Clone
-git clone https://github.com/raykuo/agentforce-probe
+git clone https://github.com/raykuonz/agentforce-probe
 cd agentforce-probe
 
 # Install with dev dependencies (uses lock file)

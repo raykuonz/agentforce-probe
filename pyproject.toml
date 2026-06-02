@@ -35,13 +35,13 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/raykuo/agentforce-probe"
-Repository = "https://github.com/raykuo/agentforce-probe"
-"Bug Tracker" = "https://github.com/raykuo/agentforce-probe/issues"
-Changelog = "https://github.com/raykuo/agentforce-probe/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/raykuonz/agentforce-probe"
+Repository = "https://github.com/raykuonz/agentforce-probe"
+"Bug Tracker" = "https://github.com/raykuonz/agentforce-probe/issues"
+Changelog = "https://github.com/raykuonz/agentforce-probe/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
-dev = ["pytest>=7.0", "pytest-cov>=4.0", "ruff>=0.4", "pip-audit>=2.7"]
+dev = ["pytest>=7.0", "pytest-cov>=4.0", "ruff>=0.4", "pip-audit>=2.7", "pre-commit>=3.5"]
 
 [project.scripts]
 agentforce-probe = "agentforce_probe.cli:main"

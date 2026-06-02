@@ -336,9 +336,24 @@ These are battle-tested; the code enforces them so you don't re-learn them:
 
 ```bash
 pip install -e ".[dev]"
-pytest            # run the test suite (pure logic; no network, no secrets)
-ruff check .      # lint
+pre-commit install   # gate every commit/push on the same checks CI runs
+pytest               # run the test suite (pure logic; no network, no secrets)
+ruff check .         # lint
 ```
+
+### Pre-commit / pre-push gate
+
+The repo ships a [`pre-commit`](https://pre-commit.com) config with `local`
+hooks (no external hook repos, works offline). After `pre-commit install`:
+
+- **on every commit** — a privacy/hygiene scan (`scripts/check-secrets.sh`:
+  no secrets, JWTs, org IDs, customer data, agent footprints, or run artifacts)
+  plus `ruff check` and `ruff format --check`.
+- **on every push** — the full `pytest` suite with the 100% coverage gate.
+
+So a commit that would leak a secret, or a push that would break a test or drop
+coverage, is blocked locally before it ever reaches GitHub. CI re-runs the same
+checks, so green-local means green-pipeline.
 
 ## License
 

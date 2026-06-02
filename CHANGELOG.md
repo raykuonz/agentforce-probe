@@ -43,5 +43,5 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - src-layout package, stdlib-first — the only runtime dependency is `pyyaml`
 - Fictional example specs (no customer, org, or real transcript data) for both External and Internal paths
 
-[Unreleased]: https://github.com/raykuo/agentforce-probe/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/raykuo/agentforce-probe/releases/tag/v0.1.0
+[Unreleased]: https://github.com/raykuonz/agentforce-probe/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/raykuonz/agentforce-probe/releases/tag/v0.1.0

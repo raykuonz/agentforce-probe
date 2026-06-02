@@ -6,6 +6,8 @@
 *.jwt
 *secret*
 *credential*
+# but the privacy-scan hook script is meant to be committed:
+!scripts/check-secrets.sh
 
 # generated evidence (regenerate locally)
 *-evidence.md

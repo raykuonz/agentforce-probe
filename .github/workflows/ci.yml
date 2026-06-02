@@ -80,3 +80,6 @@ jobs:
 
       - name: Run pip-audit
         run: uv run pip-audit --skip-editable
+
+      - name: Privacy & hygiene scan (no secrets / customer data / agent footprints)
+        run: bash scripts/check-secrets.sh

@@ -11,6 +11,14 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.1.1] — 2026-06-03
+
+### Fixed
+
+- **Internal (employee-agent) session create no longer fails with HTTP 500 `EngineConfigLookupException`.** The session body's `instanceConfig.endpoint` was incorrectly set to the Agent API host; per Salesforce's Agent API troubleshooting guidance it must be the org's **My Domain URL**. `AgentApiSession` now takes a `my_domain_url` and uses it for that field (falling back to the API host when absent); the HTTP request still targets the Agent API host. Added regression tests locking the contract.
+
+---
+
 ## [0.1.0] — 2026-06-02
 
 ### Added
@@ -43,5 +51,6 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - src-layout package, stdlib-first — the only runtime dependency is `pyyaml`
 - Fictional example specs (no customer, org, or real transcript data) for both External and Internal paths
 
-[Unreleased]: https://github.com/raykuonz/agentforce-probe/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/raykuonz/agentforce-probe/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/raykuonz/agentforce-probe/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/raykuonz/agentforce-probe/releases/tag/v0.1.0

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agentforce-probe"
-version = "0.1.0"
+version = "0.1.1"
 description = "Run automated tests against Salesforce Agentforce agents (External + Internal Copilot) and score them into evidence — fully local, privacy-first, no API key required."
 readme = "README.md"
 requires-python = ">=3.10"

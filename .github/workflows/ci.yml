@@ -34,7 +34,7 @@ jobs:
         run: uv sync --extra dev --frozen
 
       - name: Run tests
-        run: uv run pytest tests/ -v --tb=short
+        run: uv run pytest tests/ -v --tb=short --cov=agentforce_probe --cov-report=term-missing --cov-fail-under=100
 
   lint:
     name: Lint

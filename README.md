@@ -44,12 +44,59 @@ are read from a gitignored `.env` (or env vars), held in memory only, and are
 **never** printed, logged, written to evidence, or passed through a shell. Token
 diagnostics only ever expose length + JWT segment count — never bytes.
 
+## Verification status & known limitations
+
+Read this before you trust a score in anger. The tool is deliberately honest
+about what has and hasn't been validated.
+
+### What's verified
+
+- **Logic layer — fully tested.** 207 unit tests, 100% line coverage across all
+  modules. Spec loading, assertion filtering, scoring, evidence rendering, the
+  judge contract, token-shape validation, and the Agent API error ladder are all
+  exercised — with the network and the `sf` CLI mocked.
+
+### What's *not* yet verified (the real gap)
+
+- **100% coverage is not the same as "proven against a live org."** Every test
+  mocks the network and `sf`. The genuine end-to-end paths — `sf agent test`
+  against a real **External** agent, and ECA mint → JWT → live **Agent API**
+  session against a real **Internal** agent — have **not** been re-run against a
+  live Salesforce org in this open-source extraction. The InternalCopilot
+  gotchas baked into the code (opaque-token 404, 412 config errors,
+  `bypassUser` handling) were learned from real-world use, but treat **your
+  first live run as the first true end-to-end validation** and sanity-check the
+  evidence by hand.
+
+### Known limitations
+
+- **Internal path needs a one-time manual UI step.** The External Client App
+  must have `isNamedUserJwtEnabled` **on**, or the mint returns an opaque token
+  and the session endpoint 404s. The tool *detects and reports* this, but cannot
+  fix it for you — see the ECA prerequisite below. This is the most common place
+  to get stuck.
+- **Agent-type detection relies on a live org query** (`BotDefinition.Type`). If
+  your org's metadata shape differs, auto-detection can misfire; override with
+  `--force-type internal|external` (and `--bot-id` for the Internal path).
+- **The `handoff` judge is an LLM, so verdicts are not perfectly reproducible.**
+  Two graders (or the same grader twice) may disagree on a borderline case. The
+  score is a well-evidenced judgment, not a deterministic measurement — always
+  read the captured agent responses, don't rubber-stamp.
+- **Single-turn only.** Each utterance runs in its own fresh session; the tool
+  does **not** test multi-turn context or memory.
+- **`endSession` is best-effort** and silently ignores failures, so an
+  unreachable org could leave a dangling session server-side (low risk, no
+  effect on the score).
+- **`--from-results` accepts External-shaped payloads only** (offline re-scoring
+  of `sf agent test results`); there's no offline replay for the Internal path.
+- **No PyPI package yet** — install from source (`pip install -e .`).
+
 ## Install
 
 From source (until published to PyPI):
 
 ```bash
-git clone https://github.com/raykuo/agentforce-probe
+git clone https://github.com/raykuonz/agentforce-probe
 cd agentforce-probe
 pip install -e .
 ```

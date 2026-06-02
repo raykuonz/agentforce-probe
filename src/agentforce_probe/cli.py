@@ -17,6 +17,7 @@ import sys
 
 from . import config as config_mod
 from . import doctor as doctor_mod
+from . import recommendations as rec_mod
 
 
 def _print(msg=""):
@@ -25,6 +26,44 @@ def _print(msg=""):
 
 def _err(msg):
     sys.stderr.write(str(msg) + "\n")
+
+
+# ── scan ──────────────────────────────────────────────────────────────────────
+def cmd_scan(args):
+    from . import scan as scan_mod
+
+    specs = scan_mod.discover_specs(args.root)
+    _print(scan_mod.render_discovery(specs, args.root))
+
+    if not args.run:
+        return 0
+    if not args.org:
+        _err("\n--run needs --org <alias> to execute the discovered specs.")
+        return 2
+    if not specs:
+        return 0
+
+    # Execute each discovered spec through the normal run path.
+    worst = 0
+    for s in specs:
+        _print("")
+        _print("─" * 60)
+        run_args = argparse.Namespace(
+            org=args.org,
+            agent=s["agent"],
+            spec=s["path"],
+            judge=args.judge,
+            out=None,
+            from_results=None,
+            from_verdicts=None,
+            judge_task=None,
+            dry_run=False,
+            force_type=None,
+            bot_id=None,
+        )
+        code = cmd_run(run_args)
+        worst = max(worst, code)
+    return worst
 
 
 # ── doctor ────────────────────────────────────────────────────────────────────
@@ -88,6 +127,7 @@ def cmd_run(args):
         _print(
             f"Score: {total_pass}/{total} = {pct}%  ·  topic {agg['topic'][0]}/{agg['topic'][1]} · actions {agg['actions'][0]}/{agg['actions'][1]} · output {agg['output'][0]}/{agg['output'][1]}"
         )
+        _print(rec_mod.render(scored))
         out_path = args.out or (f"{agent_name}-evidence.md")
         content = evidence_mod.render_evidence(
             agent_name=agent_name,
@@ -155,6 +195,7 @@ def cmd_run(args):
     _print(
         f"Score: {total_pass}/{total} = {pct}%  ·  topic {agg['topic'][0]}/{agg['topic'][1]} · actions {agg['actions'][0]}/{agg['actions'][1]} · output {agg['output'][0]}/{agg['output'][1]}"
     )
+    _print(rec_mod.render(results))
 
     # ── evidence ──
     out_path = args.out or (f"{agent_name}-evidence.md")
@@ -358,6 +399,7 @@ def _run_from_verdicts(args, spec, agent_name, scorer, evidence_mod):
     _print(
         f"Score: {total_pass}/{total} = {pct}%  ·  topic {agg['topic'][0]}/{agg['topic'][1]} · actions {agg['actions'][0]}/{agg['actions'][1]} · output {agg['output'][0]}/{agg['output'][1]}"
     )
+    _print(rec_mod.render(scored))
 
     out_path = args.out or (f"{agent_name}-evidence.md")
     content = evidence_mod.render_evidence(
@@ -440,6 +482,16 @@ def build_parser():
     pd.add_argument("--org", help="Salesforce org alias to probe")
     pd.set_defaults(func=cmd_doctor)
 
+    ps = sub.add_parser(
+        "scan",
+        help="discover Agentforce test specs in a codebase (optionally run them all)",
+    )
+    ps.add_argument("--root", default=".", help="directory to scan (default: current dir)")
+    ps.add_argument("--run", action="store_true", help="run every discovered spec (needs --org)")
+    ps.add_argument("--org", help="Salesforce org alias (required with --run)")
+    ps.add_argument("--judge", help="judge for the Internal path (same values as `run --judge`)")
+    ps.set_defaults(func=cmd_scan)
+
     return p
 
 
@@ -449,5 +501,5 @@ def main(argv=None):
     return args.func(args)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     sys.exit(main())

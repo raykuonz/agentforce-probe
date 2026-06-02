@@ -105,9 +105,9 @@ def _http(method, url, *, headers=None, data=None, timeout=60, retries=3):
                 time.sleep(1.5 * (attempt + 1))
                 continue
             raise AgentApiError(f"network error after {retries} attempts: {e}")
-    if last_exc:
+    if last_exc:  # pragma: no cover - loop always returns or raises before here
         raise AgentApiError(f"request failed: {last_exc}")
-    raise AgentApiError("request failed for unknown reason")
+    raise AgentApiError("request failed for unknown reason")  # pragma: no cover
 
 
 def mint_token(instance_url, consumer_key, consumer_secret, *, timeout=60):

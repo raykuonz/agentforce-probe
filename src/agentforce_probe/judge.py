@@ -98,7 +98,7 @@ def _post_json(url, headers, payload, timeout=60, retries=3):
                 time.sleep(1.5 * (attempt + 1))
                 continue
             raise JudgeError(f"judge network error after {retries} attempts: {e}")
-    raise JudgeError(f"judge request failed: {last}")
+    raise JudgeError(f"judge request failed: {last}")  # pragma: no cover
 
 
 def _extract_verdict(text):

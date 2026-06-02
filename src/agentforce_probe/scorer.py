@@ -25,7 +25,7 @@ class SpecError(RuntimeError):
 
 def load_spec(path):
     """Load a test spec YAML. Returns the parsed dict with validation."""
-    if yaml is None:
+    if yaml is None:  # pragma: no cover - pyyaml is a hard runtime dependency
         raise SpecError("pyyaml is required to read specs: pip install pyyaml")
     if not os.path.exists(path):
         raise SpecError(f"spec not found: {path}")

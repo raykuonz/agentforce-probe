@@ -62,7 +62,63 @@ are read from a gitignored `.env` (or env vars), held in memory only, and are
 **never** printed, logged, written to evidence, or passed through a shell. Token
 diagnostics only ever expose length + JWT segment count — never bytes.
 
-## Verification status & known limitations
+## Install
+
+### Recommended: install the skill into your AI agent (one command)
+
+If you work in an AI coding agent (Claude Code, Cursor, Codex, OpenCode…), the
+fastest way to use this is to **install the bundled skill** — then just ask your
+agent to "test my Agentforce agent" and it drives the tool for you. It even
+installs the CLI itself on first use, so this is all you run:
+
+```bash
+npx skills add raykuonz/agentforce-probe
+```
+
+It'll let you pick which agent(s) to install into —
+[50+ are supported](https://github.com/vercel-labs/skills#supported-agents)
+(Claude Code, Cursor, Codex, OpenCode, …). Preview the skill first with
+`npx skills add raykuonz/agentforce-probe --list`. No clone, no manual setup —
+just `npx`.
+
+**Then just ask your agent in plain language** — the skill triggers on requests like:
+
+- *"Test my Agentforce agent `Support_Concierge` against `examples/specs/Support_Concierge-testSpec.yaml`"*
+- *"QA / evaluate / score the IT Helpdesk agent in my org and give me an evidence report"*
+- *"Run the agent test specs in this repo"*
+
+The agent then handles the rest for you: it installs the CLI if needed, finds
+your test specs, runs them against the org, and writes the scored evidence
+report — no commands to memorize. (For the InternalCopilot path you'll still do
+the one-time ECA setup in [Configure secrets](#configure-secrets-env); the agent
+will tell you if it's missing.)
+
+### Or: install the CLI directly
+
+Prefer to run it yourself from the terminal? Install from
+[PyPI](https://pypi.org/project/agentforce-probe/):
+
+```bash
+pip install agentforce-probe
+```
+
+This gives you the `agentforce-probe` command (the only runtime dependency is
+`pyyaml`):
+
+```bash
+agentforce-probe --help
+python3 -m agentforce_probe --help     # or run it as a module
+```
+
+To hack on it / track `main`, install from source instead:
+
+```bash
+git clone https://github.com/raykuonz/agentforce-probe
+cd agentforce-probe
+pip install -e .
+```
+
+## Maturity & limitations
 
 Read this before you trust a score in anger. The tool is deliberately honest
 about what has and hasn't been validated.
@@ -74,7 +130,7 @@ about what has and hasn't been validated.
   judge contract, token-shape validation, and the Agent API error ladder are all
   exercised — with the network and the `sf` CLI mocked.
 
-### What's *not* yet verified (the real gap)
+### What's not yet verified
 
 - **100% coverage is not the same as "proven against a live org."** Every test
   mocks the network and `sf`. The genuine end-to-end paths — `sf agent test`
@@ -107,53 +163,6 @@ about what has and hasn't been validated.
   effect on the score).
 - **`--from-results` accepts External-shaped payloads only** (offline re-scoring
   of `sf agent test results`); there's no offline replay for the Internal path.
-
-## Install
-
-From [PyPI](https://pypi.org/project/agentforce-probe/):
-
-```bash
-pip install agentforce-probe
-```
-
-This installs the `agentforce-probe` console command. You can also run it as a
-module:
-
-```bash
-agentforce-probe --help
-python3 -m agentforce_probe --help
-```
-
-The only runtime dependency is `pyyaml`.
-
-To install from source instead (e.g. to track `main` or hack on it):
-
-```bash
-git clone https://github.com/raykuonz/agentforce-probe
-cd agentforce-probe
-pip install -e .
-```
-
-### Install the Claude skill (no CLI needed)
-
-This repo ships a [Claude Code](https://docs.anthropic.com/claude/docs/agent-skills)
-skill (`probe-agentforce-agents`) that teaches an agent when and how to drive
-`agentforce-probe`. Install it into your agent in one command with
-[`vercel-labs/skills`](https://github.com/vercel-labs/skills) — no clone, no
-install, just `npx`:
-
-```bash
-# Preview the skill without installing
-npx skills add raykuonz/agentforce-probe --list
-
-# Install it globally into Claude Code
-npx skills add raykuonz/agentforce-probe -g -a claude-code -y
-```
-
-It also works with Cursor, Codex, OpenCode, and
-[50+ other agents](https://github.com/vercel-labs/skills#supported-agents) — drop
-the `-a claude-code` flag to pick interactively. The skill assumes the
-`agentforce-probe` CLI is installed (see above).
 
 ## Configure secrets (`.env`)
 

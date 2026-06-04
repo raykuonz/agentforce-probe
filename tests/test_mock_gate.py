@@ -7,11 +7,11 @@ Covers:
 - --out + mock + no --allow-mock-evidence does NOT create the file
 """
 
-
 from agentforce_probe import evidence, scorer
 from agentforce_probe import judge as judge_mod
 
 # ── is_ungrounded_provider ─────────────────────────────────────────────────────
+
 
 def test_mock_is_ungrounded():
     assert judge_mod.is_ungrounded_provider("mock") is True
@@ -30,6 +30,7 @@ def test_anthropic_is_not_ungrounded():
 
 
 # ── render_evidence: ungrounded banner and judge label stamp ───────────────────
+
 
 def _make_results():
     return [
@@ -87,6 +88,7 @@ def test_render_evidence_default_ungrounded_false():
 
 # ── cmd_run: score line carries ⚠️ suffix for mock judge ──────────────────────
 
+
 def _wire_internal_mock(monkeypatch, scored):
     """Patch all I/O dependencies for the internal mock path."""
     from agentforce_probe import agent_meta, sf_internal, sfcli
@@ -128,8 +130,7 @@ def test_score_line_carries_mock_warning(monkeypatch, capsys, tmp_path):
     _wire_internal_mock(monkeypatch, _SCORED_ONE_PASS)
     out_path = tmp_path / "ev.md"
     rc = cli.main(
-        ["run", "--org", "o", "--spec", "s.yaml", "--judge", "mock",
-         "--out", str(out_path), "--allow-mock-evidence"]
+        ["run", "--org", "o", "--spec", "s.yaml", "--judge", "mock", "--out", str(out_path), "--allow-mock-evidence"]
     )
     out = capsys.readouterr().out
     assert rc == 0
@@ -142,9 +143,7 @@ def test_out_plus_mock_no_flag_refuses_file(monkeypatch, capsys, tmp_path):
 
     _wire_internal_mock(monkeypatch, _SCORED_ONE_PASS)
     out_path = tmp_path / "ev.md"
-    rc = cli.main(
-        ["run", "--org", "o", "--spec", "s.yaml", "--judge", "mock", "--out", str(out_path)]
-    )
+    rc = cli.main(["run", "--org", "o", "--spec", "s.yaml", "--judge", "mock", "--out", str(out_path)])
     err = capsys.readouterr().err
     assert rc == 0
     assert not out_path.exists(), "evidence file must NOT be written for mock judge without --allow-mock-evidence"
@@ -159,8 +158,7 @@ def test_out_plus_mock_with_flag_writes_file(monkeypatch, capsys, tmp_path):
     _wire_internal_mock(monkeypatch, _SCORED_ONE_PASS)
     out_path = tmp_path / "ev.md"
     rc = cli.main(
-        ["run", "--org", "o", "--spec", "s.yaml", "--judge", "mock",
-         "--out", str(out_path), "--allow-mock-evidence"]
+        ["run", "--org", "o", "--spec", "s.yaml", "--judge", "mock", "--out", str(out_path), "--allow-mock-evidence"]
     )
     assert rc == 0
     assert out_path.exists()

@@ -33,6 +33,7 @@ def _write_cases(cases, path):
 
 # ── no-key clean skip ─────────────────────────────────────────────────────────
 
+
 def test_no_key_exits_zero(monkeypatch, capsys):
     monkeypatch.setattr(_cal, "_resolve_provider_and_key", lambda: (None, None))
     code = _cal.run()
@@ -43,6 +44,7 @@ def test_no_key_exits_zero(monkeypatch, capsys):
 
 
 # ── scoring math via fake judge ───────────────────────────────────────────────
+
 
 def _fake_judge_agree(provider, model, api_key, utterance, expected, response):
     """PASS for r1/r2, FAIL for r3/r4 — agrees with fixture labels exactly."""
@@ -76,6 +78,7 @@ def test_scoring_below_threshold_exits_nonzero(monkeypatch, tmp_path, capsys):
 
 
 # ── cases.jsonl schema validity ───────────────────────────────────────────────
+
 
 def test_cases_jsonl_parses():
     cases = []

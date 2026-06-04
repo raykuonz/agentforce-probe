@@ -1,9 +1,9 @@
 """Tests for estimate_calls helper and the pre-run cost estimate print."""
 
-
 from agentforce_probe import judge as judge_mod
 
 # ── estimate_calls unit tests ─────────────────────────────────────────────────
+
 
 def test_estimate_calls_anthropic():
     est = judge_mod.estimate_calls(50, "anthropic")
@@ -38,6 +38,7 @@ def test_estimate_calls_handoff():
 
 
 # ── integration: estimate line printed on mock run ────────────────────────────
+
 
 def _wire_internal_mock(monkeypatch, scored):
     from agentforce_probe import agent_meta, sf_internal, sfcli
@@ -78,8 +79,18 @@ def test_estimate_line_printed_for_mock_run(monkeypatch, capsys, tmp_path):
 
     _wire_internal_mock(monkeypatch, _SCORED_ONE_PASS)
     rc = cli.main(
-        ["run", "--org", "o", "--spec", "s.yaml", "--judge", "mock",
-         "--out", str(tmp_path / "ev.md"), "--allow-mock-evidence"]
+        [
+            "run",
+            "--org",
+            "o",
+            "--spec",
+            "s.yaml",
+            "--judge",
+            "mock",
+            "--out",
+            str(tmp_path / "ev.md"),
+            "--allow-mock-evidence",
+        ]
     )
     out = capsys.readouterr().out
     assert rc == 0
@@ -93,11 +104,14 @@ def test_estimate_line_printed_for_live_judge_run(monkeypatch, capsys, tmp_path)
     from agentforce_probe import config as config_mod
     from agentforce_probe import scorer as scorer_mod
 
-    spec = {"subjectName": "Help", "testCases": [
-        {"utterance": "q1", "expectedOutcome": "o1"},
-        {"utterance": "q2", "expectedOutcome": "o2"},
-        {"utterance": "q3", "expectedOutcome": "o3"},
-    ]}
+    spec = {
+        "subjectName": "Help",
+        "testCases": [
+            {"utterance": "q1", "expectedOutcome": "o1"},
+            {"utterance": "q2", "expectedOutcome": "o2"},
+            {"utterance": "q3", "expectedOutcome": "o3"},
+        ],
+    }
     scored = [
         {
             "number": i,

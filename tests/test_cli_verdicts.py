@@ -145,10 +145,17 @@ def test_from_verdicts_skips_output_when_no_expected_outcome(monkeypatch, capsys
     out_path = tmp_path / "ev.md"
     rc = cli.main(
         [
-            "run", "--org", "o", "--spec", "s.yaml",
-            "--from-verdicts", str(vpath),
-            "--judge-task", str(task_path),
-            "--out", str(out_path),
+            "run",
+            "--org",
+            "o",
+            "--spec",
+            "s.yaml",
+            "--from-verdicts",
+            str(vpath),
+            "--judge-task",
+            str(task_path),
+            "--out",
+            str(out_path),
         ]
     )
     captured = capsys.readouterr()

@@ -1,6 +1,5 @@
 """6-axis judge core tests (T3a): composite, threshold, parsing, back-compat."""
 
-
 from agentforce_probe import judge as judge_mod
 from agentforce_probe import scorer
 
@@ -10,6 +9,7 @@ def _all(v):
 
 
 # ── composite_score ────────────────────────────────────────────────────────────
+
 
 def test_composite_all_one():
     assert judge_mod.composite_score(_all(1.0)) == 1.0
@@ -43,6 +43,7 @@ def test_composite_no_axes_is_zero():
 
 # ── axes_to_verdict ─────────────────────────────────────────────────────────────
 
+
 def test_verdict_at_threshold_passes():
     # comfortably above threshold (avoid float-equality at the exact boundary)
     assert judge_mod.axes_to_verdict(_all(0.8)) is True
@@ -66,6 +67,7 @@ def test_verdict_low_factual_drags_composite_to_fail():
 
 
 # ── _extract_verdict (6-axis JSON, old shape, garbage) ──────────────────────────
+
 
 def test_extract_six_axis_json():
     text = (
@@ -112,6 +114,7 @@ def test_extract_garbage_falls_back():
 
 # ── judge_case returns a 3-tuple ────────────────────────────────────────────────
 
+
 def test_judge_case_mock_three_tuple_axes_none():
     passed, reason, axes = judge_mod.judge_case("mock", "", None, "u", "expected", "a reply")
     assert isinstance(passed, bool)
@@ -119,6 +122,7 @@ def test_judge_case_mock_three_tuple_axes_none():
 
 
 # ── scorer carries axes ─────────────────────────────────────────────────────────
+
 
 def test_score_case_stores_axes():
     axes = _all(0.8)

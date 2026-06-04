@@ -38,10 +38,11 @@ def test_run_internal_mock_judge_scores_live(monkeypatch, capsys, tmp_path):
     ]
     monkeypatch.setattr(sf_internal, "run_internal", lambda **k: scored)
     out_path = tmp_path / "ev.md"
-    rc = cli.main(["run", "--org", "o", "--spec", "s.yaml", "--judge", "mock", "--out", str(out_path)])
+    rc = cli.main(["run", "--org", "o", "--spec", "s.yaml", "--judge", "mock", "--out", str(out_path), "--allow-mock-evidence"])
     out = capsys.readouterr().out
     assert rc == 0
     assert "Score: 1/1 = 100%" in out
+    assert "MOCK JUDGE" in out
     assert out_path.exists()
 
 

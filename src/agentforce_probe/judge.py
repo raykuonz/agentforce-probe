@@ -41,6 +41,13 @@ class JudgeError(RuntimeError):
     pass
 
 
+UNGROUNDED_PROVIDERS = {"mock"}
+
+
+def is_ungrounded_provider(provider):
+    return provider in UNGROUNDED_PROVIDERS
+
+
 SYSTEM_PROMPT = (
     "You are a strict QA grader for an enterprise AI agent. Given a user "
     "utterance, the expected outcome, and the agent's actual response, decide "

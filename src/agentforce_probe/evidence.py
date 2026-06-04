@@ -72,6 +72,12 @@ def render_evidence(*, agent_name, org_alias, agent_type, path_label, results, j
         out.append("- output (judge): **{}**".format(r["output"]))
         if r.get("judge_reason"):
             out.append("  - reason: {}".format(r["judge_reason"]))
+        axes = r.get("axes")
+        if axes:
+            from . import judge as _judge
+            comp = _judge.composite_score(axes)
+            parts = [f"{k} {axes[k]:.2g}" for k in _judge.JUDGE_AXES if k in axes]
+            out.append("  - axes: {}  ·  composite {:.2f}".format(" · ".join(parts), comp))
         out.append("")
         out.append("**Agent response:**")
         out.append("")

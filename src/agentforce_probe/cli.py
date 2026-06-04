@@ -420,6 +420,7 @@ def _run_from_verdicts(args, spec, agent_name, scorer, evidence_mod):
                 actual_topic=actual_topic,
                 actual_actions=actual_actions,
                 judge_reason=judge_reason,
+                axes=v.get("axes"),
             )
         )
 

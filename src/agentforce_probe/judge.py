@@ -59,9 +59,13 @@ SYSTEM_PROMPT = (
 
 
 def build_user_prompt(utterance, expected_outcome, actual_response):
+    # Callers must gate on a non-empty expected_outcome before calling this.
+    # The fallback below is defensive only — real scored runs should never reach it.
     return (
         "UTTERANCE:\n{}\n\nEXPECTED OUTCOME:\n{}\n\nACTUAL AGENT RESPONSE:\n{}\n\nReturn the JSON verdict now.".format(
-            utterance, expected_outcome or "(none provided)", actual_response or "(empty)"
+            utterance,
+            expected_outcome or "(no expected outcome — should not be scored)",
+            actual_response or "(empty)",
         )
     )
 

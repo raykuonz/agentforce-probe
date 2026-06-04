@@ -44,3 +44,15 @@ def test_aggregate_ignores_dash_dimensions():
     assert agg["actions"] == [0, 0]
     assert total_pass == 2
     assert total == 3
+
+
+def test_output_not_scored_when_output_pass_none():
+    r = scorer.score_case({"utterance": "x"}, 1, output_pass=None)
+    assert r["output"] == "-"
+
+
+def test_aggregate_excludes_case_with_no_output():
+    r = scorer.score_case({"utterance": "x"}, 1, output_pass=None)
+    agg, total_pass, total = scorer.aggregate([r])
+    assert agg["output"] == [0, 0]
+    assert total == 0

@@ -392,7 +392,14 @@ def _run_from_verdicts(args, spec, agent_name, scorer, evidence_mod):
             actions_pass = exp.issubset(set(actual_actions))
 
         v = verdicts_by_id[cid]
-        output_pass = v["verdict"] == "PASS"
+        expected_outcome = tc.get("expected_outcome", "")
+        if expected_outcome and str(expected_outcome).strip():
+            output_pass = v["verdict"] == "PASS"
+            judge_reason = v["reason"]
+        else:
+            output_pass = None
+            judge_reason = None
+            _err(f"case {cid}: output not scored (no expectedOutcome)")
         scored.append(
             scorer.score_case(
                 spec_case,
@@ -403,7 +410,7 @@ def _run_from_verdicts(args, spec, agent_name, scorer, evidence_mod):
                 response=tc.get("actual_response", ""),
                 actual_topic=actual_topic,
                 actual_actions=actual_actions,
-                judge_reason=v["reason"],
+                judge_reason=judge_reason,
             )
         )
 

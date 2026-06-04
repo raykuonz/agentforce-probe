@@ -88,3 +88,41 @@ def test_score_session_with_mock_judge_applies_filtering():
     agg, total_pass, total = scorer.aggregate(scored)
     assert agg["output"] == [1, 2]
     assert agg["topic"] == [0, 1]
+
+
+def test_score_session_skips_judge_when_no_expected_outcome():
+    spec = {
+        "testCases": [
+            {"utterance": "q1", "expectedOutcome": "grounded expectation"},
+            {"utterance": "q2"},  # no expectedOutcome
+        ]
+    }
+    raw = [
+        {"number": 1, "utterance": "q1", "response": "response one", "topic": None, "actions": []},
+        {"number": 2, "utterance": "q2", "response": "response two", "topic": None, "actions": []},
+    ]
+
+    judge_calls = []
+
+    def judge_fn(expected_outcome, actual_response, utterance=None):
+        judge_calls.append(expected_outcome)
+        return True, "graded"
+
+    diag_msgs = []
+    scored = sf_internal.score_session(spec=spec, raw_results=raw, judge_fn=judge_fn, diag=diag_msgs.append)
+
+    # judge invoked only for the case with expectedOutcome
+    assert len(judge_calls) == 1
+    assert judge_calls[0] == "grounded expectation"
+
+    # case with expectedOutcome is scored
+    assert scored[0]["output"] == "PASS"
+    # case without expectedOutcome stays unscored
+    assert scored[1]["output"] == "-"
+
+    # output denominator counts only the grounded case
+    agg, _tp, _t = scorer.aggregate(scored)
+    assert agg["output"] == [1, 1]
+
+    # diag emits a skip message for the unscored case
+    assert any("output not scored" in m for m in diag_msgs)

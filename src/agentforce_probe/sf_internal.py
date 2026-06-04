@@ -116,21 +116,27 @@ def score_session(*, spec, raw_results, judge_fn, diag=None):
         i = raw["number"]
         c = cases[i - 1]
         topic_pass, actions_pass = _topic_actions_for_case(c, raw.get("topic"), raw.get("actions"))
-        passed, reason = judge_fn(c.get("expectedOutcome"), raw.get("response"), utterance=raw.get("utterance"))
+        expected_outcome = c.get("expectedOutcome")
+        if expected_outcome and str(expected_outcome).strip():
+            output_pass, reason = judge_fn(expected_outcome, raw.get("response"), utterance=raw.get("utterance"))
+            _diag(f"case {i} scored (output={'PASS' if output_pass else 'FAIL'})")
+        else:
+            output_pass = None
+            reason = None
+            _diag(f"case {i}: output not scored (no expectedOutcome)")
         scored.append(
             score_case(
                 c,
                 i,
                 topic_pass=topic_pass,
                 actions_pass=actions_pass,
-                output_pass=passed,
+                output_pass=output_pass,
                 response=raw.get("response", ""),
                 actual_topic=raw.get("topic"),
                 actual_actions=raw.get("actions"),
                 judge_reason=reason,
             )
         )
-        _diag(f"case {i} scored (output={'PASS' if passed else 'FAIL'})")
     return scored
 
 

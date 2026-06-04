@@ -260,6 +260,15 @@ def _run_internal(args, cfg, spec, meta, judge_label, agent_name):
     if not instance_url:
         raise RuntimeError("could not determine org instance URL")
 
+    est = judge_mod.estimate_calls(len(spec["testCases"]), provider)
+    if est["live_judge"]:
+        _print(
+            f"Estimated calls: {est['n_cases']} Agent API + {est['judge_llm_calls']} judge LLM"
+            f" (live {provider} judge) — judge LLM is billed per call."
+        )
+    else:
+        _print(f"Estimated calls: {est['n_cases']} Agent API + 0 judge LLM (no paid judge cost).")
+
     # ── handoff: replay the session, write the judge task package, then EXIT.
     #    No LLM is contacted. The developer grades with Claude Code, then runs
     #    `--from-verdicts` to collect the verdicts into evidence.

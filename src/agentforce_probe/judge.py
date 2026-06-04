@@ -48,6 +48,21 @@ def is_ungrounded_provider(provider):
     return provider in UNGROUNDED_PROVIDERS
 
 
+def estimate_calls(n_cases, provider):
+    """Return a dict describing the call volume for a run.
+    agent_api_calls = n_cases (one Agent API message per case).
+    judge_llm_calls = n_cases for a live judge (openai/anthropic), else 0
+    (mock = no paid LLM; handoff = graded out-of-band, no live LLM call here).
+    """
+    live = provider in ("openai", "anthropic")
+    return {
+        "n_cases": n_cases,
+        "agent_api_calls": n_cases,
+        "judge_llm_calls": n_cases if live else 0,
+        "live_judge": live,
+    }
+
+
 SYSTEM_PROMPT = (
     "You are a strict QA grader for an enterprise AI agent. Given a user "
     "utterance, the expected outcome, and the agent's actual response, decide "

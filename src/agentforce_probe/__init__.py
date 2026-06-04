@@ -6,4 +6,4 @@ Salesforce org and (optionally, Internal path only) the configured judge LLM.
 Secrets are never exfiltrated, printed, logged, or written to evidence.
 """
 
-__version__ = "0.1.1"
+__version__ = "0.2.0"

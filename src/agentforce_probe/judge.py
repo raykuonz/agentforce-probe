@@ -312,6 +312,9 @@ def build_task_package(agent_name, org_alias, spec, raw_results):
 
 
 def write_task_package(path, task):
+    parent = os.path.dirname(os.path.abspath(path))
+    if parent:
+        os.makedirs(parent, exist_ok=True)
     with open(path, "w", encoding="utf-8") as fh:
         json.dump(task, fh, indent=2, ensure_ascii=False)
         fh.write("\n")
@@ -407,6 +410,9 @@ def render_judging_md(agent_name, task_path, verdicts_path_str):
 
 
 def write_judging_md(path, content):
+    parent = os.path.dirname(os.path.abspath(path))
+    if parent:
+        os.makedirs(parent, exist_ok=True)
     with open(path, "w", encoding="utf-8") as fh:
         fh.write(content)
 

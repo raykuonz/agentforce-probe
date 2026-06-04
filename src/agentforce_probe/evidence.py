@@ -9,6 +9,7 @@ agent responses, and pass/fail. Callers must pass already-scored case dicts.
 """
 
 import datetime
+import os
 
 
 def _fmt_actions(actions):
@@ -108,5 +109,8 @@ def _actions_detail(r):
 
 
 def write_evidence(path, content):
+    parent = os.path.dirname(os.path.abspath(path))
+    if parent:
+        os.makedirs(parent, exist_ok=True)
     with open(path, "w", encoding="utf-8") as fh:
         fh.write(content)

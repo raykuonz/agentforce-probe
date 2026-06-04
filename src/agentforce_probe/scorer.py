@@ -76,6 +76,7 @@ def _blank_result(number, utterance):
         "actualTopic": None,
         "actualActions": None,
         "judge_reason": None,
+        "axes": None,
     }
 
 
@@ -90,6 +91,7 @@ def score_case(
     actual_topic=None,
     actual_actions=None,
     judge_reason=None,
+    axes=None,
 ):
     """Apply the filtering rules to produce one unified case result.
 
@@ -106,6 +108,7 @@ def score_case(
     r["actualTopic"] = actual_topic
     r["actualActions"] = actual_actions
     r["judge_reason"] = judge_reason
+    r["axes"] = axes
 
     if has_topic and topic_pass is not None:
         r["topic"] = "PASS" if topic_pass else "FAIL"

@@ -60,6 +60,7 @@ def cmd_scan(args):
             dry_run=False,
             force_type=None,
             bot_id=None,
+            allow_mock_evidence=False,
         )
         code = cmd_run(run_args)
         worst = max(worst, code)
@@ -189,16 +190,29 @@ def cmd_run(args):
         return 4
 
     # ── score summary ──
+    from . import judge as judge_mod
+
+    provider, _ = judge_mod.parse_judge(judge_label)
+    ungrounded = judge_mod.is_ungrounded_provider(provider)
+
     agg, total_pass, total = scorer.aggregate(results)
     pct = round(100 * total_pass / total) if total else 0
+    score_line = f"Score: {total_pass}/{total} = {pct}%  ·  topic {agg['topic'][0]}/{agg['topic'][1]} · actions {agg['actions'][0]}/{agg['actions'][1]} · output {agg['output'][0]}/{agg['output'][1]}"
+    if ungrounded:
+        score_line += "  ⚠️ MOCK JUDGE — NOT A REAL PASS RATE"
     _print("")
-    _print(
-        f"Score: {total_pass}/{total} = {pct}%  ·  topic {agg['topic'][0]}/{agg['topic'][1]} · actions {agg['actions'][0]}/{agg['actions'][1]} · output {agg['output'][0]}/{agg['output'][1]}"
-    )
+    _print(score_line)
     _print(rec_mod.render(results))
 
     # ── evidence ──
     out_path = args.out or (f"{agent_name}-evidence.md")
+
+    if ungrounded and args.out and not getattr(args, "allow_mock_evidence", False):
+        _err(
+            "Refusing to write evidence with a mock judge. Re-run with --allow-mock-evidence to override (the file will carry a MOCK banner)."
+        )
+        return 0
+
     content = evidence_mod.render_evidence(
         agent_name=agent_name,
         org_alias=args.org,
@@ -206,6 +220,7 @@ def cmd_run(args):
         path_label=path_label,
         results=results,
         judge_label=judge_label,
+        ungrounded=ungrounded,
     )
     evidence_mod.write_evidence(out_path, content)
     _print(f"Evidence written: {out_path}")
@@ -244,6 +259,15 @@ def _run_internal(args, cfg, spec, meta, judge_label, agent_name):
     instance_url = sfcli.get_org_instance_url(args.org)
     if not instance_url:
         raise RuntimeError("could not determine org instance URL")
+
+    est = judge_mod.estimate_calls(len(spec["testCases"]), provider)
+    if est["live_judge"]:
+        _print(
+            f"Estimated calls: {est['n_cases']} Agent API + {est['judge_llm_calls']} judge LLM"
+            f" (live {provider} judge) — judge LLM is billed per call."
+        )
+    else:
+        _print(f"Estimated calls: {est['n_cases']} Agent API + 0 judge LLM (no paid judge cost).")
 
     # ── handoff: replay the session, write the judge task package, then EXIT.
     #    No LLM is contacted. The developer grades with Claude Code, then runs
@@ -377,7 +401,14 @@ def _run_from_verdicts(args, spec, agent_name, scorer, evidence_mod):
             actions_pass = exp.issubset(set(actual_actions))
 
         v = verdicts_by_id[cid]
-        output_pass = v["verdict"] == "PASS"
+        expected_outcome = tc.get("expected_outcome", "")
+        if expected_outcome and str(expected_outcome).strip():
+            output_pass = v["verdict"] == "PASS"
+            judge_reason = v["reason"]
+        else:
+            output_pass = None
+            judge_reason = None
+            _err(f"case {cid}: output not scored (no expectedOutcome)")
         scored.append(
             scorer.score_case(
                 spec_case,
@@ -388,7 +419,8 @@ def _run_from_verdicts(args, spec, agent_name, scorer, evidence_mod):
                 response=tc.get("actual_response", ""),
                 actual_topic=actual_topic,
                 actual_actions=actual_actions,
-                judge_reason=v["reason"],
+                judge_reason=judge_reason,
+                axes=v.get("axes"),
             )
         )
 
@@ -476,6 +508,12 @@ def build_parser():
         "--force-type", choices=["internal", "external"], help="(dry-run aid) skip org lookup and assume this type"
     )
     pr.add_argument("--bot-id", help="(dry-run aid) BotDefinition Id for Internal path")
+    pr.add_argument(
+        "--allow-mock-evidence",
+        action="store_true",
+        dest="allow_mock_evidence",
+        help="permit writing evidence to --out with an ungrounded (mock) judge; otherwise mock runs print the score+banner but refuse to write an evidence file",
+    )
     pr.set_defaults(func=cmd_run)
 
     pd = sub.add_parser("doctor", help="preflight: sf CLI, org, ECA, secrets")

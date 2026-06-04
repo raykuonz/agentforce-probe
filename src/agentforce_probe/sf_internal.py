@@ -101,7 +101,7 @@ def _topic_actions_for_case(spec_case, actual_topic, actual_actions):
 def score_session(*, spec, raw_results, judge_fn, diag=None):
     """Score raw session results (from run_session) into filtered case results.
 
-    `judge_fn(utterance, expected_outcome, actual_response) -> (passed, reason)`
+    `judge_fn(utterance, expected_outcome, actual_response) -> (passed, reason, axes)`
     is the output_validation signal. topic/actions come straight from the raw
     live response. Returns the scored case list (scorer.score_case shape).
     """
@@ -116,21 +116,29 @@ def score_session(*, spec, raw_results, judge_fn, diag=None):
         i = raw["number"]
         c = cases[i - 1]
         topic_pass, actions_pass = _topic_actions_for_case(c, raw.get("topic"), raw.get("actions"))
-        passed, reason = judge_fn(c.get("expectedOutcome"), raw.get("response"), utterance=raw.get("utterance"))
+        expected_outcome = c.get("expectedOutcome")
+        if expected_outcome and str(expected_outcome).strip():
+            output_pass, reason, axes = judge_fn(expected_outcome, raw.get("response"), utterance=raw.get("utterance"))
+            _diag(f"case {i} scored (output={'PASS' if output_pass else 'FAIL'})")
+        else:
+            output_pass = None
+            reason = None
+            axes = None
+            _diag(f"case {i}: output not scored (no expectedOutcome)")
         scored.append(
             score_case(
                 c,
                 i,
                 topic_pass=topic_pass,
                 actions_pass=actions_pass,
-                output_pass=passed,
+                output_pass=output_pass,
                 response=raw.get("response", ""),
                 actual_topic=raw.get("topic"),
                 actual_actions=raw.get("actions"),
                 judge_reason=reason,
+                axes=axes,
             )
         )
-        _diag(f"case {i} scored (output={'PASS' if passed else 'FAIL'})")
     return scored
 
 
@@ -160,8 +168,9 @@ def run_internal(
     )
 
     def _judge(expected_outcome, actual_response, utterance=None):
-        return judge_mod.judge_case(
+        passed, reason, axes = judge_mod.judge_case(
             judge_provider, judge_model, judge_api_key, utterance, expected_outcome, actual_response
         )
+        return passed, reason, axes
 
     return score_session(spec=spec, raw_results=raw, judge_fn=_judge, diag=diag)

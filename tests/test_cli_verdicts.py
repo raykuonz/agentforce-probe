@@ -112,6 +112,60 @@ def test_run_internal_no_bot_id_fails(monkeypatch, capsys):
     assert "no BotDefinition Id" in capsys.readouterr().err
 
 
+def test_from_verdicts_skips_output_when_no_expected_outcome(monkeypatch, capsys, tmp_path):
+    """Task case with empty expected_outcome: verdict is accepted but output stays '-'."""
+    from agentforce_probe import judge as judge_mod
+    from agentforce_probe import scorer
+
+    spec = {
+        "subjectName": "Help",
+        "testCases": [
+            {"utterance": "q1", "expectedOutcome": "grounded expectation"},
+            {"utterance": "q2"},  # no expectedOutcome
+        ],
+    }
+    monkeypatch.setattr(scorer, "load_spec", lambda p: spec)
+    raw = [
+        {"number": 1, "utterance": "q1", "response": "r1", "topic": None, "actions": []},
+        {"number": 2, "utterance": "q2", "response": "r2", "topic": None, "actions": []},
+    ]
+    task = judge_mod.build_task_package("Help", "o", spec, raw)
+    task_path = tmp_path / "Help-judge-task.json"
+    judge_mod.write_task_package(str(task_path), task)
+    verdicts = {
+        "schema": judge_mod.VERDICTS_SCHEMA,
+        "agent": "Help",
+        "verdicts": [
+            {"id": 1, "verdict": "PASS", "reason": "ok"},
+            {"id": 2, "verdict": "PASS", "reason": "ok"},
+        ],
+    }
+    vpath = tmp_path / "Help-judge-verdicts.json"
+    vpath.write_text(json.dumps(verdicts), encoding="utf-8")
+    out_path = tmp_path / "ev.md"
+    rc = cli.main(
+        [
+            "run",
+            "--org",
+            "o",
+            "--spec",
+            "s.yaml",
+            "--from-verdicts",
+            str(vpath),
+            "--judge-task",
+            str(task_path),
+            "--out",
+            str(out_path),
+        ]
+    )
+    captured = capsys.readouterr()
+    assert rc == 0
+    # output denominator is 1 (only the case with expectedOutcome)
+    assert "output 1/1" in captured.out
+    # a WARN line appears for the skipped case
+    assert "output not scored" in captured.err
+
+
 def test_run_internal_no_instance_url_fails(monkeypatch, capsys):
     """Internal path, org instance URL not resolvable -> RuntimeError (cli ~205)."""
     from agentforce_probe import agent_meta, scorer, sfcli

@@ -101,7 +101,7 @@ def test_score_session_actions_filtering_and_diag():
     diags = []
 
     def judge_fn(expected_outcome, actual_response, utterance=None):
-        return True, "ok"
+        return True, "ok", None
 
     scored = sf_internal.score_session(spec=spec, raw_results=raw, judge_fn=judge_fn, diag=diags.append)
     assert scored[0]["actions"] == "PASS"  # {DoX} subset of {DoX,DoY}
@@ -113,7 +113,7 @@ def test_score_session_actions_fail_when_missing():
     raw = [{"number": 1, "utterance": "q", "response": "ok", "topic": None, "actions": ["DoX"]}]
 
     def judge_fn(eo, ar, utterance=None):
-        return True, "ok"
+        return True, "ok", None
 
     scored = sf_internal.score_session(spec=spec, raw_results=raw, judge_fn=judge_fn)
     assert scored[0]["actions"] == "FAIL"  # DoZ missing

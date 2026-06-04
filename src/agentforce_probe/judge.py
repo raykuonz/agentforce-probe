@@ -41,20 +41,73 @@ class JudgeError(RuntimeError):
     pass
 
 
+UNGROUNDED_PROVIDERS = {"mock"}
+
+
+def is_ungrounded_provider(provider):
+    return provider in UNGROUNDED_PROVIDERS
+
+
+def estimate_calls(n_cases, provider):
+    """Return a dict describing the call volume for a run.
+    agent_api_calls = n_cases (one Agent API message per case).
+    judge_llm_calls = n_cases for a live judge (openai/anthropic), else 0
+    (mock = no paid LLM; handoff = graded out-of-band, no live LLM call here).
+    """
+    live = provider in ("openai", "anthropic")
+    return {
+        "n_cases": n_cases,
+        "agent_api_calls": n_cases,
+        "judge_llm_calls": n_cases if live else 0,
+        "live_judge": live,
+    }
+
+
+JUDGE_AXES = [
+    "factualAccuracy",
+    "completeness",
+    "citationQuality",
+    "answerStructure",
+    "instructionAdherence",
+    "answerRelevance",
+]
+
+PASS_THRESHOLD = 0.7
+
+
+def composite_score(axes):
+    """Mean of the present JUDGE_AXES values; 0.0 if none present."""
+    scores = [float(axes[k]) for k in JUDGE_AXES if k in axes and axes[k] is not None]
+    return sum(scores) / len(scores) if scores else 0.0
+
+
+def axes_to_verdict(axes, threshold=PASS_THRESHOLD):
+    """True if composite_score(axes) >= threshold."""
+    return composite_score(axes) >= threshold
+
+
 SYSTEM_PROMPT = (
     "You are a strict QA grader for an enterprise AI agent. Given a user "
-    "utterance, the expected outcome, and the agent's actual response, decide "
-    "whether the actual response satisfies the expected outcome. Be conservative: "
+    "utterance, the expected outcome, and the agent's actual response, score "
+    "six quality axes (each 0.0–1.0) and provide a short reason. Be conservative: "
     "if the agent leaks protected data, fails a security gate, fabricates figures, "
-    "or does not do what the expected outcome requires, return FAIL. "
-    'Respond with STRICT JSON only: {"verdict":"PASS"|"FAIL","reason":"..."}.'
+    "or does not satisfy the expected outcome, push factualAccuracy and "
+    "instructionAdherence toward 0. "
+    "Respond with STRICT JSON only: "
+    '{"factualAccuracy":0.0-1.0,"completeness":0.0-1.0,"citationQuality":0.0-1.0,'
+    '"answerStructure":0.0-1.0,"instructionAdherence":0.0-1.0,"answerRelevance":0.0-1.0,'
+    '"reason":"..."}.'
 )
 
 
 def build_user_prompt(utterance, expected_outcome, actual_response):
+    # Callers must gate on a non-empty expected_outcome before calling this.
+    # The fallback below is defensive only — real scored runs should never reach it.
     return (
         "UTTERANCE:\n{}\n\nEXPECTED OUTCOME:\n{}\n\nACTUAL AGENT RESPONSE:\n{}\n\nReturn the JSON verdict now.".format(
-            utterance, expected_outcome or "(none provided)", actual_response or "(empty)"
+            utterance,
+            expected_outcome or "(no expected outcome — should not be scored)",
+            actual_response or "(empty)",
         )
     )
 
@@ -102,33 +155,45 @@ def _post_json(url, headers, payload, timeout=60, retries=3):
 
 
 def _extract_verdict(text):
-    """Pull {"verdict","reason"} out of model text (tolerant of code fences)."""
+    """Parse judge text -> (passed: bool, reason: str, axes: dict|None).
+
+    Supports both the new 6-axis JSON shape and the legacy {"verdict","reason"} shape.
+    Falls back to a keyword scan when JSON parsing fails.
+    """
     if not text:
-        return False, "judge returned empty output"
+        return False, "judge returned empty output", None
     s = text.find("{")
     e = text.rfind("}")
     if s != -1 and e != -1 and e > s:
         try:
             obj = json.loads(text[s : e + 1])
-            verdict = str(obj.get("verdict", "")).upper().strip()
-            reason = str(obj.get("reason", "")).strip()
-            return verdict == "PASS", reason or "(no reason given)"
+            reason = str(obj.get("reason", "")).strip() or "(no reason given)"
+            # New 6-axis shape: at least one axis key present
+            axis_keys_present = [k for k in JUDGE_AXES if k in obj]
+            if axis_keys_present:
+                axes = {k: float(obj[k]) for k in axis_keys_present}
+                passed = axes_to_verdict(axes)
+                return passed, reason, axes
+            # Legacy shape: {"verdict": "PASS"|"FAIL", ...}
+            if "verdict" in obj:
+                verdict = str(obj.get("verdict", "")).upper().strip()
+                return verdict == "PASS", reason, None
         except Exception:
             pass
     # Fallback: keyword scan
     up = text.upper()
     if "PASS" in up and "FAIL" not in up:
-        return True, text.strip()[:300]
-    return False, text.strip()[:300]
+        return True, text.strip()[:300], None
+    return False, text.strip()[:300], None
 
 
 def judge_case(provider, model, api_key, utterance, expected_outcome, actual_response):
-    """Return (passed: bool, reason: str). Routes to provider implementation."""
+    """Return (passed: bool, reason: str, axes: dict|None). Routes to provider implementation."""
     if provider == "mock":
         # Offline heuristic for dry runs / tests: non-empty response with no
         # obvious refusal-of-everything => PASS. Never used against a real org.
         ok = bool((actual_response or "").strip())
-        return ok, "mock judge: response present" if ok else "mock judge: empty response"
+        return ok, "mock judge: response present" if ok else "mock judge: empty response", None
 
     if not api_key:
         raise JudgeError(f"no API key for judge provider '{provider}' (set the matching AGENTPROBE_*_API_KEY)")
@@ -180,15 +245,19 @@ def judge_case(provider, model, api_key, utterance, expected_outcome, actual_res
 # ── handoff (Claude Code file-handoff) protocol ───────────────────────────────
 # Schema version tags. Bump these if the on-disk shapes change.
 TASK_SCHEMA = "agentforce-probe/judge-task@1"
-VERDICTS_SCHEMA = "agentforce-probe/judge-verdicts@1"
+VERDICTS_SCHEMA = "agentforce-probe/judge-verdicts@2"
+VERDICTS_SCHEMA_V1 = "agentforce-probe/judge-verdicts@1"  # back-compat recognition
 
 # The rubric handed to Claude Code reuses SYSTEM_PROMPT's wording verbatim so the
 # file-handoff judge grades by the same standard as the API-key judge.
 HANDOFF_RUBRIC = SYSTEM_PROMPT
 
 HANDOFF_INSTRUCTIONS = (
-    "For each case, decide if actual_response satisfies expected_outcome. "
-    "Write {id,verdict,reason} for every case into the verdicts file. "
+    "For each case, score the six quality axes (each 0.0–1.0) and write a short reason. "
+    "Axes: " + ", ".join(JUDGE_AXES) + ". "
+    "Do NOT write a verdict field — PASS/FAIL is derived automatically from the composite. "
+    "Write {id, factualAccuracy, completeness, citationQuality, answerStructure, "
+    "instructionAdherence, answerRelevance, reason} for every case. "
     "Do not skip any case."
 )
 
@@ -237,11 +306,15 @@ def build_task_package(agent_name, org_alias, spec, raw_results):
         "org": org_alias,
         "rubric": HANDOFF_RUBRIC,
         "instructions": HANDOFF_INSTRUCTIONS,
+        "axes": JUDGE_AXES,
         "cases": cases,
     }
 
 
 def write_task_package(path, task):
+    parent = os.path.dirname(os.path.abspath(path))
+    if parent:
+        os.makedirs(parent, exist_ok=True)
     with open(path, "w", encoding="utf-8") as fh:
         json.dump(task, fh, indent=2, ensure_ascii=False)
         fh.write("\n")
@@ -256,7 +329,7 @@ def render_judging_md(agent_name, task_path, verdicts_path_str):
     lines.append("")
     lines.append(
         "This agent runs on the **InternalCopilot** path, which needs an "
-        "LLM to grade each response (PASS/FAIL). Instead of a raw API key, "
+        "LLM to grade each response. Instead of a raw API key, "
         "you can use **Claude Code** as the judge."
     )
     lines.append("")
@@ -270,18 +343,23 @@ def render_judging_md(agent_name, task_path, verdicts_path_str):
     lines.append("")
     lines.append(
         f"> You are a strict QA grader. Read the file `{task_base}` in this "
-        f"repository. It is JSON of schema `{TASK_SCHEMA}` with a `rubric` and a list "
-        "of `cases`, each having `id`, `utterance`, `expected_outcome`, "
+        f"repository. It is JSON of schema `{TASK_SCHEMA}` with a `rubric`, an `axes` list, "
+        "and a list of `cases`, each having `id`, `utterance`, `expected_outcome`, "
         "`actual_response`, `actual_topic`, and `actual_actions`."
     )
     lines.append("> ")
     lines.append(
-        "> For **every** case, apply the rubric in the file and decide "
-        "whether `actual_response` satisfies `expected_outcome`. The "
-        "verdict must be exactly `PASS` or `FAIL` (uppercase, nothing "
-        "else). Be conservative: if the agent leaks protected data, fails "
-        "a security gate, fabricates figures, or does not do what the "
-        "expected outcome requires, the verdict is `FAIL`."
+        "> For **every** case, apply the rubric and score the following six axes "
+        "(each 0.0–1.0): `factualAccuracy`, `completeness`, `citationQuality`, "
+        "`answerStructure`, `instructionAdherence`, `answerRelevance`. "
+        "Be conservative: if the agent leaks protected data, fails "
+        "a security gate, fabricates figures, or does not satisfy the "
+        "expected outcome, push `factualAccuracy` and `instructionAdherence` toward 0."
+    )
+    lines.append("> ")
+    lines.append(
+        "> **Do NOT write a `verdict` field.** The overall PASS/FAIL is derived "
+        "automatically from the composite axis score by `agentforce-probe`."
     )
     lines.append("> ")
     lines.append(
@@ -293,16 +371,24 @@ def render_judging_md(agent_name, task_path, verdicts_path_str):
     lines.append(f'>   "schema": "{VERDICTS_SCHEMA}",')
     lines.append(f'>   "agent": "{agent_name}",')
     lines.append('>   "verdicts": [')
-    lines.append('>     {"id": 1, "verdict": "PASS", "reason": "..."},')
-    lines.append('>     {"id": 2, "verdict": "FAIL", "reason": "..."}')
+    lines.append(">     {")
+    lines.append('>       "id": 1,')
+    lines.append('>       "factualAccuracy": 0.9,')
+    lines.append('>       "completeness": 0.8,')
+    lines.append('>       "citationQuality": 0.7,')
+    lines.append('>       "answerStructure": 0.9,')
+    lines.append('>       "instructionAdherence": 1.0,')
+    lines.append('>       "answerRelevance": 0.9,')
+    lines.append('>       "reason": "..."')
+    lines.append(">     }")
     lines.append(">   ]")
     lines.append("> }")
     lines.append("> ```")
     lines.append("> ")
     lines.append(
-        "> Rules: include exactly one entry per case `id` (do not skip "
-        "any), `verdict` is only `PASS` or `FAIL`, keep `reason` short. "
-        "Do not add or remove fields."
+        "> Rules: include exactly one entry per case `id` (do not skip any), "
+        "each axis score must be 0.0–1.0, keep `reason` short. "
+        "PASS/FAIL is derived from the composite — do not add a `verdict` field."
     )
     lines.append("")
     lines.append("## Step 2 — collect the verdicts into evidence")
@@ -315,16 +401,18 @@ def render_judging_md(agent_name, task_path, verdicts_path_str):
     lines.append("```")
     lines.append("")
     lines.append(
-        "That reads the verdicts back, applies the assertion-filtering "
-        "rules, and writes the unified evidence markdown. It validates "
-        "that every case id has a verdict and that each verdict is "
-        "PASS/FAIL."
+        "That reads the verdicts back, derives PASS/FAIL from the composite axis score, "
+        "applies the assertion-filtering rules, and writes the unified evidence markdown. "
+        "It validates that every case id has an entry."
     )
     lines.append("")
     return "\n".join(lines) + "\n"
 
 
 def write_judging_md(path, content):
+    parent = os.path.dirname(os.path.abspath(path))
+    if parent:
+        os.makedirs(parent, exist_ok=True)
     with open(path, "w", encoding="utf-8") as fh:
         fh.write(content)
 
@@ -347,10 +435,11 @@ def load_task_package(path):
 
 
 def load_verdicts(path):
-    """Read + validate a judge-verdicts.json.
+    """Read + validate a judge-verdicts.json. Accepts @2 (axis-based) and @1 (verdict-based) shapes.
 
-    Returns (verdicts_by_id: {int: {"verdict": str, "reason": str}}, warnings:
-    list[str]). Raises HandoffError on hard errors (bad shape, illegal verdict).
+    Returns (verdicts_by_id: {int: {"verdict": str, "reason": str, "axes": dict|None,
+    "composite": float|None}}, warnings: list[str]).
+    Raises HandoffError on hard errors (bad shape, missing verdict/axes).
     """
     if not os.path.exists(path):
         raise HandoffError(f"verdicts file not found: {path}")
@@ -361,7 +450,11 @@ def load_verdicts(path):
 
     warnings = []
     schema = obj.get("schema")
-    if schema != VERDICTS_SCHEMA:
+    if schema == VERDICTS_SCHEMA:
+        pass  # @2 — current format, no warning
+    elif schema == VERDICTS_SCHEMA_V1:
+        warnings.append(f"verdicts schema is {schema!r} (legacy @1 format, axes not available)")
+    else:
         warnings.append(f"verdicts schema is {schema!r}, expected {VERDICTS_SCHEMA!r}")
 
     verdicts = obj.get("verdicts")
@@ -378,12 +471,26 @@ def load_verdicts(path):
             cid = int(v["id"])
         except (TypeError, ValueError):
             raise HandoffError(f"verdicts[{idx}] has non-integer id {v.get('id')!r}")
-        verdict = str(v.get("verdict", "")).upper().strip()
-        if verdict not in ("PASS", "FAIL"):
-            raise HandoffError(
-                f"verdicts[{idx}] (id={cid}) has illegal verdict {v.get('verdict')!r} — must be PASS or FAIL"
-            )
+
+        reason = str(v.get("reason", "")).strip()
+        axis_keys_present = [k for k in JUDGE_AXES if k in v]
+
+        if axis_keys_present:
+            # @2 shape: score six axes, derive verdict from composite
+            axes = {k: float(v[k]) for k in axis_keys_present}
+            comp = composite_score(axes)
+            verdict = "PASS" if axes_to_verdict(axes) else "FAIL"
+            entry = {"verdict": verdict, "reason": reason, "axes": axes, "composite": comp}
+        else:
+            # @1 / legacy shape: explicit PASS/FAIL required
+            verdict = str(v.get("verdict", "")).upper().strip()
+            if verdict not in ("PASS", "FAIL"):
+                raise HandoffError(
+                    f"verdicts[{idx}] (id={cid}) has illegal verdict {v.get('verdict')!r} — must be PASS or FAIL"
+                )
+            entry = {"verdict": verdict, "reason": reason, "axes": None, "composite": None}
+
         if cid in by_id:
             raise HandoffError(f"duplicate verdict for id {cid}")
-        by_id[cid] = {"verdict": verdict, "reason": str(v.get("reason", "")).strip()}
+        by_id[cid] = entry
     return by_id, warnings

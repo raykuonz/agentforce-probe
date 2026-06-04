@@ -4,9 +4,8 @@ import json
 
 import pytest
 
-from agentforce_probe import evidence
+from agentforce_probe import evidence, scorer
 from agentforce_probe import judge as judge_mod
-from agentforce_probe import scorer
 
 
 def _axis_entry(cid, val, reason="r"):

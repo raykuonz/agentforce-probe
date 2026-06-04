@@ -8,7 +8,6 @@ works on the first run, after the costly replay has already happened.
 """
 
 import json
-import os
 
 from agentforce_probe import evidence, judge
 

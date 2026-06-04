@@ -1,9 +1,7 @@
 """Tests for estimate_calls helper and the pre-run cost estimate print."""
 
-import pytest
 
 from agentforce_probe import judge as judge_mod
-
 
 # ── estimate_calls unit tests ─────────────────────────────────────────────────
 
@@ -42,8 +40,9 @@ def test_estimate_calls_handoff():
 # ── integration: estimate line printed on mock run ────────────────────────────
 
 def _wire_internal_mock(monkeypatch, scored):
-    from agentforce_probe import agent_meta, scorer as scorer_mod, sf_internal, sfcli
+    from agentforce_probe import agent_meta, sf_internal, sfcli
     from agentforce_probe import config as config_mod
+    from agentforce_probe import scorer as scorer_mod
 
     spec = {"subjectName": "Help", "testCases": [{"utterance": "q", "expectedOutcome": "o"}]}
     monkeypatch.setattr(scorer_mod, "load_spec", lambda p: spec)
@@ -90,8 +89,9 @@ def test_estimate_line_printed_for_mock_run(monkeypatch, capsys, tmp_path):
 
 
 def test_estimate_line_printed_for_live_judge_run(monkeypatch, capsys, tmp_path):
-    from agentforce_probe import agent_meta, scorer as scorer_mod, sf_internal, sfcli
-    from agentforce_probe import cli, config as config_mod
+    from agentforce_probe import agent_meta, cli, sf_internal, sfcli
+    from agentforce_probe import config as config_mod
+    from agentforce_probe import scorer as scorer_mod
 
     spec = {"subjectName": "Help", "testCases": [
         {"utterance": "q1", "expectedOutcome": "o1"},

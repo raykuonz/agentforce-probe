@@ -21,7 +21,7 @@ _src = os.path.join(_repo_root, "src")
 if _src not in sys.path:
     sys.path.insert(0, _src)
 
-from agentforce_probe.config import Config, JUDGE_KEY_ENV  # noqa: E402
+from agentforce_probe.config import JUDGE_KEY_ENV, Config  # noqa: E402
 from agentforce_probe.judge import judge_case  # noqa: E402
 
 _DEFAULT_CASES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "calibration", "cases.jsonl")

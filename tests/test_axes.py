@@ -1,6 +1,5 @@
 """6-axis judge core tests (T3a): composite, threshold, parsing, back-compat."""
 
-import pytest
 
 from agentforce_probe import judge as judge_mod
 from agentforce_probe import scorer

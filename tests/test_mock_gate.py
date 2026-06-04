@@ -7,11 +7,9 @@ Covers:
 - --out + mock + no --allow-mock-evidence does NOT create the file
 """
 
-import pytest
 
-from agentforce_probe import evidence, judge as judge_mod
-from agentforce_probe import scorer
-
+from agentforce_probe import evidence, scorer
+from agentforce_probe import judge as judge_mod
 
 # ── is_ungrounded_provider ─────────────────────────────────────────────────────
 
@@ -91,8 +89,9 @@ def test_render_evidence_default_ungrounded_false():
 
 def _wire_internal_mock(monkeypatch, scored):
     """Patch all I/O dependencies for the internal mock path."""
-    from agentforce_probe import agent_meta, scorer as scorer_mod, sf_internal, sfcli
+    from agentforce_probe import agent_meta, sf_internal, sfcli
     from agentforce_probe import config as config_mod
+    from agentforce_probe import scorer as scorer_mod
 
     spec = {"subjectName": "Help", "testCases": [{"utterance": "q", "expectedOutcome": "o"}]}
     monkeypatch.setattr(scorer_mod, "load_spec", lambda p: spec)
@@ -173,6 +172,7 @@ def test_out_plus_mock_with_flag_writes_file(monkeypatch, capsys, tmp_path):
 def test_mock_no_out_writes_autonamed_file(monkeypatch, capsys, tmp_path):
     """Without --out, even a mock run writes the auto-named evidence file."""
     import os
+
     from agentforce_probe import cli
 
     _wire_internal_mock(monkeypatch, _SCORED_ONE_PASS)

@@ -51,7 +51,7 @@ def _load_cases(path):
 def run(cases_path=None, threshold=_DEFAULT_THRESHOLD, _judge_fn=None):
     """Core calibration runner. Returns exit code (int).
 
-    _judge_fn: optional override — (provider, model, api_key, utterance, expected, response) -> (bool, str).
+    _judge_fn: optional override — (provider, model, api_key, utterance, expected, response) -> (bool, str, dict|None).
     Returns 0 on success or clean skip, 1 when agreement is below threshold.
     """
     if cases_path is None:
@@ -79,7 +79,7 @@ def run(cases_path=None, threshold=_DEFAULT_THRESHOLD, _judge_fn=None):
         response = case["response"]
         human_label = case["label"]
 
-        judge_passed, reason = judge_fn(provider, "", api_key, utterance, expected, response)
+        judge_passed, reason, _axes = judge_fn(provider, "", api_key, utterance, expected, response)
         judge_label = "PASS" if judge_passed else "FAIL"
         agree = judge_label == human_label
 

@@ -18,5 +18,5 @@ def test_run_external_helper_rejects_dry_run():
 
 def test_judge_extract_verdict_both_keywords_fails():
     """Both PASS and FAIL present -> not a clean keyword match -> FAIL (116-117)."""
-    ok, reason = judge._extract_verdict("It could PASS or FAIL depending.")
+    ok, reason, axes = judge._extract_verdict("It could PASS or FAIL depending.")
     assert ok is False

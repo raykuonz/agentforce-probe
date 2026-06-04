@@ -26,12 +26,12 @@ def test_parse_judge_empty_raises():
 
 # ── mock provider ─────────────────────────────────────────────────────────────
 def test_judge_mock_pass():
-    ok, reason = judge.judge_case("mock", "", None, "u", "exp", "a non-empty response")
+    ok, reason, axes = judge.judge_case("mock", "", None, "u", "exp", "a non-empty response")
     assert ok is True
 
 
 def test_judge_mock_fail_on_empty():
-    ok, reason = judge.judge_case("mock", "", None, "u", "exp", "")
+    ok, reason, axes = judge.judge_case("mock", "", None, "u", "exp", "")
     assert ok is False
 
 
@@ -53,7 +53,7 @@ def test_judge_openai_pass(monkeypatch):
         "_post_json",
         lambda *a, **k: {"choices": [{"message": {"content": '{"verdict":"PASS","reason":"good"}'}}]},
     )
-    ok, reason = judge.judge_case("openai", "", "sk-x", "u", "exp", "resp")
+    ok, reason, axes = judge.judge_case("openai", "", "sk-x", "u", "exp", "resp")
     assert ok is True and reason == "good"
 
 
@@ -63,7 +63,7 @@ def test_judge_openai_fail(monkeypatch):
         "_post_json",
         lambda *a, **k: {"choices": [{"message": {"content": '{"verdict":"FAIL","reason":"leaked data"}'}}]},
     )
-    ok, reason = judge.judge_case("openai", "gpt-4o", "sk-x", "u", "exp", "resp")
+    ok, reason, axes = judge.judge_case("openai", "gpt-4o", "sk-x", "u", "exp", "resp")
     assert ok is False and "leaked" in reason
 
 
@@ -74,31 +74,31 @@ def test_judge_anthropic_pass(monkeypatch):
         "_post_json",
         lambda *a, **k: {"content": [{"type": "text", "text": '{"verdict":"PASS","reason":"ok"}'}]},
     )
-    ok, reason = judge.judge_case("anthropic", "", "sk-ant", "u", "exp", "resp")
+    ok, reason, axes = judge.judge_case("anthropic", "", "sk-ant", "u", "exp", "resp")
     assert ok is True and reason == "ok"
 
 
 # ── _extract_verdict branches ─────────────────────────────────────────────────
 def test_extract_verdict_fenced_json():
-    ok, reason = judge._extract_verdict('```json\n{"verdict":"PASS","reason":"fine"}\n```')
+    ok, reason, axes = judge._extract_verdict('```json\n{"verdict":"PASS","reason":"fine"}\n```')
     assert ok is True and reason == "fine"
 
 
 def test_extract_verdict_keyword_fallback_pass():
-    ok, reason = judge._extract_verdict("The answer is PASS overall.")
+    ok, reason, axes = judge._extract_verdict("The answer is PASS overall.")
     assert ok is True
 
 
 def test_extract_verdict_keyword_fallback_fail():
-    ok, reason = judge._extract_verdict("This is a FAIL because of leakage.")
+    ok, reason, axes = judge._extract_verdict("This is a FAIL because of leakage.")
     assert ok is False
 
 
 def test_extract_verdict_empty():
-    ok, reason = judge._extract_verdict("")
+    ok, reason, axes = judge._extract_verdict("")
     assert ok is False and "empty" in reason
 
 
 def test_extract_verdict_no_reason_defaults():
-    ok, reason = judge._extract_verdict('{"verdict":"PASS"}')
+    ok, reason, axes = judge._extract_verdict('{"verdict":"PASS"}')
     assert ok is True and reason == "(no reason given)"

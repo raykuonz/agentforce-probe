@@ -214,5 +214,5 @@ def test_http_gaierror_exhausts(monkeypatch):
 def test_extract_verdict_malformed_brace_then_keyword(monkeypatch):
     """A {...} that is NOT valid JSON forces the except branch (116-117), then the
     keyword scan returns PASS."""
-    ok, reason = judge._extract_verdict("verdict {not: valid, json here} but PASS clearly")
+    ok, reason, axes = judge._extract_verdict("verdict {not: valid, json here} but PASS clearly")
     assert ok is True

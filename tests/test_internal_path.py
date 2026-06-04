@@ -77,7 +77,7 @@ def test_score_session_with_mock_judge_applies_filtering():
 
     def judge_fn(expected_outcome, actual_response, utterance=None):
         ok = bool((actual_response or "").strip())
-        return ok, "mock"
+        return ok, "mock", None
 
     scored = sf_internal.score_session(spec=spec, raw_results=raw, judge_fn=judge_fn)
     assert scored[0]["output"] == "PASS"  # non-empty response
@@ -106,7 +106,7 @@ def test_score_session_skips_judge_when_no_expected_outcome():
 
     def judge_fn(expected_outcome, actual_response, utterance=None):
         judge_calls.append(expected_outcome)
-        return True, "graded"
+        return True, "graded", None
 
     diag_msgs = []
     scored = sf_internal.score_session(spec=spec, raw_results=raw, judge_fn=judge_fn, diag=diag_msgs.append)

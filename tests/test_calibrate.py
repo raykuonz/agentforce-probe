@@ -46,12 +46,12 @@ def test_no_key_exits_zero(monkeypatch, capsys):
 
 def _fake_judge_agree(provider, model, api_key, utterance, expected, response):
     """PASS for r1/r2, FAIL for r3/r4 — agrees with fixture labels exactly."""
-    return response in ("r1", "r2"), "fake"
+    return response in ("r1", "r2"), "fake", None
 
 
 def _fake_judge_always_pass(provider, model, api_key, utterance, expected, response):
     """Always PASS — disagrees with the two FAIL-labelled fixture cases."""
-    return True, "fake always pass"
+    return True, "fake always pass", None
 
 
 def test_scoring_full_agreement(monkeypatch, tmp_path, capsys):

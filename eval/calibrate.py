@@ -48,6 +48,32 @@ def _load_cases(path):
     return cases
 
 
+def cohens_kappa(tp, tn, fp, fn):
+    """Chance-corrected agreement (Cohen's kappa) for the 2x2 PASS/FAIL confusion.
+
+    Raw % agreement is misleading when the label distribution is skewed (Thakur
+    et al., "Judging the Judges", 2024 — a judge can score high raw agreement yet
+    have poor kappa). Kappa corrects for agreement expected by chance.
+
+    Returns a float in [-1, 1]; 1.0 = perfect, 0.0 = chance-level, <0 = worse
+    than chance. Returns 1.0 for the degenerate all-agree single-class case and
+    0.0 when the total is zero.
+    """
+    n = tp + tn + fp + fn
+    if n == 0:
+        return 0.0
+    po = (tp + tn) / n  # observed agreement
+    # marginals: judge says PASS = tp+fp, human says PASS = tp+fn, etc.
+    p_pass = ((tp + fp) / n) * ((tp + fn) / n)
+    p_fail = ((tn + fn) / n) * ((tn + fp) / n)
+    pe = p_pass + p_fail  # agreement expected by chance
+    if pe >= 1.0:
+        # both raters always pick the same single class -> agreement is trivially
+        # perfect; kappa is undefined (0/0) so report 1.0 when they fully agree.
+        return 1.0 if (fp == 0 and fn == 0) else 0.0
+    return (po - pe) / (1.0 - pe)
+
+
 def run(cases_path=None, threshold=_DEFAULT_THRESHOLD, _judge_fn=None):
     """Core calibration runner. Returns exit code (int).
 
@@ -100,10 +126,12 @@ def run(cases_path=None, threshold=_DEFAULT_THRESHOLD, _judge_fn=None):
 
     total = len(cases)
     agreement = correct / total if total > 0 else 0.0
+    kappa = cohens_kappa(tp, tn, fp, fn)
 
     print()
     print(f"agreement: {correct}/{total} = {agreement:.1%}")
     print(f"confusion:  TP={tp}  TN={tn}  FP={fp}  FN={fn}")
+    print(f"cohen's kappa: {kappa:.3f}  (chance-corrected; <0 worse than chance, 1.0 perfect)")
     print()
 
     if agreement < threshold:

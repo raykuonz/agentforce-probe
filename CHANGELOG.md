@@ -11,6 +11,40 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.3.0] — 2026-06-05
+
+### Added
+
+- **Hybrid judge aggregation (conjunctive veto + compensatory mean).** The
+  six-axis judge no longer reduces to a plain average. A critical axis below a
+  floor — `factualAccuracy` or `instructionAdherence` under `0.3` — now **vetoes
+  the case to FAIL** regardless of the other axes, so a fluent, well-structured
+  answer that fabricates a figure or breaches a security gate can no longer
+  average its way to a pass. Above the floor, the remaining axes composite as
+  before against the `0.7` threshold.
+- **Cohen's kappa in the calibration harness.** `eval/calibrate.py` now reports
+  chance-corrected agreement (Cohen's κ) alongside raw agreement and the
+  confusion matrix, because raw agreement alone is misleading on skewed label
+  distributions.
+- **Hand-labelled calibration set expanded to 30 cases** (`eval/calibration/cases.jsonl`),
+  including deliberately fluent-but-fabricated and gate-breach traps that
+  specifically exercise the veto.
+- **Offline calibration regression in CI** (`tests/test_calibration_baseline.py`
+  + `eval/calibration/judge-baseline.json`). A frozen snapshot of judge axis
+  scores is re-checked on every commit — with no API key and no network — to
+  prove the scoring logic still reproduces the human PASS/FAIL labels and keeps
+  Cohen's κ above a floor. A change to the veto floor or threshold that breaks
+  alignment with the calibration set now fails the build.
+
+### Notes
+
+- The calibration result (30/30 agreement, κ = 1.0, with all FAILs caught by the
+  veto) is a *smoke-level* check on a small synthetic set — it shows the scoring
+  logic aligns with human judgment on those cases, not a statistical accuracy
+  guarantee for every agent or domain.
+
+---
+
 ## [0.2.0] — 2026-06-04
 
 ### Added

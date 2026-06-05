@@ -32,3 +32,4 @@ venv/
 .coverage
 htmlcov/
 .hermes/
+eval/calibration/cc-verdicts.json

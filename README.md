@@ -67,14 +67,41 @@ and what it lets you see:
 `agentforce-probe` addresses both. It grades each response with a **structured
 multi-axis judge** — every axis scored *with a written reason*, including a
 factual-accuracy axis that drives unsupported figures toward FAIL instead of a
-hand-wavy "3". And it runs an **independent second path** (a real headless
-Agent API session) so you can cross-check what the official run reports rather
-than trust a single, lenient source. One command, one evidence report, both
-agent types.
+hand-wavy "3". Critically, the judge is **not a plain average**: a critical axis
+below a floor (a fabricated figure, a breached security gate) **vetoes** the
+whole case to FAIL regardless of how polished the rest of the response is — a
+fluent-but-fabricated answer can't buy its way to a pass. And it runs an
+**independent second path** (a real headless Agent API session) so you can
+cross-check what the official run reports rather than trust a single, lenient
+source. One command, one evidence report, both agent types.
 
 > All claims above are from our own runs against a live org on 2026-06-05; see
 > [`docs/evidence/`](docs/evidence/) for the raw commands and output. We
 > describe what *we measured*, not a guarantee about every org or release.
+
+## Is the judge itself trustworthy?
+
+A judge that catches the official scorer's mistakes is only useful if *it*
+agrees with human judgment. So we keep a hand-labelled calibration set
+([`eval/calibration/cases.jsonl`](eval/calibration/cases.jsonl), 30 synthetic
+PASS/FAIL cases including deliberately fluent-but-fabricated traps) and measure
+the judge against it.
+
+On that set, an LLM judge (run via the no-API-key Claude Code handoff path)
+scored each case independently — without seeing the human labels — and its
+derived PASS/FAIL verdicts agreed with the human labels on **30/30 cases
+(Cohen's κ = 1.0)**, with every one of the 17 FAILs caught by the
+factual-accuracy / instruction-adherence veto. A frozen snapshot of those axis
+scores is checked into [`eval/calibration/judge-baseline.json`](eval/calibration/judge-baseline.json)
+and a **CI test re-verifies the alignment on every commit** (offline, no key) —
+so a change to the veto floor or threshold that breaks agreement with the
+calibration set turns the build red.
+
+> This is a *smoke-level* calibration on a small synthetic set, not a
+> statistical guarantee. It shows the scoring logic aligns with human judgment
+> on these cases; it is not a claim of accuracy on every agent or domain. The
+> live calibration harness ([`eval/calibrate.py`](eval/calibrate.py)) lets you
+> re-run this against your own labelled cases with a real judge.
 
 ## Privacy
 

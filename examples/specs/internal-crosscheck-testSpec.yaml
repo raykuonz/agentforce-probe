@@ -1,0 +1,7 @@
+name: "Internal agent headless cross-check (example)"
+subjectType: AGENT
+subjectName: IT_Helpdesk_Assistant
+
+testCases:
+  - utterance: "Summarize the open ticket history for asset A-1006 so I can plan the next maintenance window."
+    expectedOutcome: "Agent resolves asset A-1006 and summarizes real ticket/maintenance data without inventing figures."

@@ -3,18 +3,21 @@
 **A local, privacy-first CLI to run automated tests against Salesforce
 Agentforce agents — and score the results into evidence.**
 
-> **TL;DR** — Salesforce's Testing Center can score your *customer-facing*
-> agents but **silently can't touch your employee-facing ones**.
-> `agentforce-probe` tests **both** from one command and hands you a single
-> evidence report. It runs entirely on your machine, sends nothing to third
-> parties, and needs **no API key** to get started.
+> **TL;DR** — Salesforce's Testing Center *can* score both customer-facing and
+> employee-facing agents — but in our live-org testing its built-in judge waved
+> through a response it **itself flagged as likely fabricated**, and it can't
+> show you which topic actually fired. `agentforce-probe` re-tests **both**
+> agent types from one command with a **strict, multi-axis judge** and an
+> **independent second path**, then hands you a single evidence report. It runs
+> entirely on your machine, sends nothing to third parties, and needs **no API
+> key** to get started.
 
 ### Do I need to set anything up? (the 30-second version)
 
 | You're testing… | What you need | headless API / ECA? |
 | --- | --- | --- |
 | **ExternalCopilot** (customer/service agents) | just an `sf`-authenticated org | ❌ none — Testing Center judges for you, zero secrets |
-| **InternalCopilot** (employee agents) | the above **+ a one-time External Client App** (consumer key/secret in `.env`) | ✅ yes — this is the headless path Testing Center can't do |
+| **InternalCopilot** (employee agents) | the above **+ a one-time External Client App** (consumer key/secret in `.env`) | ✅ yes — the independent headless path used to cross-check the official run |
 | *Optional:* grade with a live LLM judge | an OpenAI/Anthropic API key | the default judge is a **no-key Claude Code handoff** |
 
 So: **External agents work out of the box.** The only real setup is a one-time
@@ -27,10 +30,12 @@ Full steps are in [Configure secrets](#configure-secrets-env).
   `sf agent test create/run/results`. Salesforce **Testing Center** provides the
   LLM judge (`output_validation`) for you — no extra setup.
 - **InternalCopilot** (employee agents) → **this is the tool's core value.**
-  Testing Center *cannot* run employee agents, so `agentforce-probe` walks the
-  headless path instead: **External Client App → Client Credentials mint (JWT) →
-  Agent API headless session → one message per utterance → a configurable
-  LLM-as-judge** scores each response.
+  Testing Center *can* run employee agents, but its judge is a lenient 0–5
+  rating and its routing is unobservable (see [Why this exists](#why-this-exists)).
+  So `agentforce-probe` also walks an independent headless path —
+  **External Client App → Client Credentials mint (JWT) → Agent API headless
+  session → one message per utterance → a configurable LLM-as-judge** — letting
+  you cross-check the official result with a strict, multi-axis score.
 
 Both paths emit **one unified evidence markdown report** (per case: utterance /
 topic / agent response / each assertion), using the same assertion-filtering
@@ -38,16 +43,38 @@ rules.
 
 ## Why this exists
 
-Salesforce's built-in Testing Center (`sf agent test`) only runs
-**ExternalCopilot** agents — the customer-facing ones that have a Bot User to
-impersonate. **InternalCopilot** (employee/internal) agents have no run-as Bot
-User, so the Testing Center judge never fires and you simply cannot get an
-automated test score for them through the supported tooling.
+Salesforce's built-in Testing Center (`sf agent test`) **can** test
+**InternalCopilot** (employee) agents — we ran the full
+`create → run → results` flow against a real internal agent in a live org and
+it created the test, invoked the agent's actions, returned real data, and
+scored the result. So the gap isn't *whether* it runs. It's *how it judges*,
+and what it lets you see:
 
-That's a real product gap. `agentforce-probe` closes it: for Internal agents it
-bypasses the Testing Center and drives the **headless Agent API** directly,
-replaying each utterance through a real session and grading the responses with
-an LLM-as-judge. One command, one evidence report, both agent types.
+1. **The official judge is a loose 0–5 rating that passes fabrication
+   through.** On one case it returned **PASS / score 3** while writing, in its
+   own explanation:
+
+   > *"the bot's figures are likely fabricated and not verified against real
+   > data … this constitutes a partial alignment."*
+
+   It flagged the doubt — and passed it anyway. A score that can't decide
+   whether the data was real isn't a score you can ship behind.
+
+2. **Routing is unobservable for internal agents.** Every internal-agent run
+   reported topic `agent_router` instead of the topic that actually fired, so
+   you can't assert on routing.
+
+`agentforce-probe` addresses both. It grades each response with a **structured
+multi-axis judge** — every axis scored *with a written reason*, including a
+factual-accuracy axis that drives unsupported figures toward FAIL instead of a
+hand-wavy "3". And it runs an **independent second path** (a real headless
+Agent API session) so you can cross-check what the official run reports rather
+than trust a single, lenient source. One command, one evidence report, both
+agent types.
+
+> All claims above are from our own runs against a live org on 2026-06-05; see
+> [`docs/evidence/`](docs/evidence/) for the raw commands and output. We
+> describe what *we measured*, not a guarantee about every org or release.
 
 ## Privacy
 

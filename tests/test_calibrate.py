@@ -31,6 +31,34 @@ def _write_cases(cases, path):
             fh.write(json.dumps(c) + "\n")
 
 
+# ── cohen's kappa math ────────────────────────────────────────────────────────
+
+
+def test_kappa_perfect_agreement():
+    # all correct, both classes present -> kappa 1.0
+    assert _cal.cohens_kappa(tp=2, tn=2, fp=0, fn=0) == 1.0
+
+
+def test_kappa_chance_level_is_zero():
+    # judge agrees exactly as often as chance predicts -> kappa ~0
+    # 2x2 with tp=tn=fp=fn=1: po=0.5, pe=0.5 -> kappa 0
+    assert abs(_cal.cohens_kappa(tp=1, tn=1, fp=1, fn=1)) < 1e-9
+
+
+def test_kappa_worse_than_chance_negative():
+    # mostly wrong -> negative kappa
+    assert _cal.cohens_kappa(tp=0, tn=0, fp=3, fn=3) < 0
+
+
+def test_kappa_zero_total():
+    assert _cal.cohens_kappa(tp=0, tn=0, fp=0, fn=0) == 0.0
+
+
+def test_kappa_single_class_all_agree():
+    # judge + human both always PASS, no disagreement -> report 1.0 (not 0/0)
+    assert _cal.cohens_kappa(tp=4, tn=0, fp=0, fn=0) == 1.0
+
+
 # ── no-key clean skip ─────────────────────────────────────────────────────────
 
 

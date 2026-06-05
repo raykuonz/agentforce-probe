@@ -66,6 +66,75 @@ def test_verdict_low_factual_drags_composite_to_fail():
     assert judge_mod.axes_to_verdict(axes) is False
 
 
+# ── hybrid veto: conjunctive hard gate over the compensatory mean ───────────────
+
+
+def test_veto_fabricated_but_fluent_fails():
+    """THE HOLE the hybrid gate closes: a fabricated answer (factualAccuracy=0.0)
+    that is otherwise beautifully written (everything else 0.9). The old
+    unweighted mean = (0.0 + 0.9*5)/6 = 0.75 >= 0.7 -> would PASS. The veto must
+    FAIL it regardless of how polished the prose is."""
+    axes = {
+        "factualAccuracy": 0.0,
+        "completeness": 0.9,
+        "citationQuality": 0.9,
+        "answerStructure": 0.9,
+        "instructionAdherence": 0.9,
+        "answerRelevance": 0.9,
+    }
+    # the compensatory mean alone would have passed it ...
+    assert judge_mod.composite_score(axes) >= judge_mod.PASS_THRESHOLD
+    # ... but the veto fails it.
+    assert judge_mod.axes_to_verdict(axes) is False
+    assert judge_mod.vetoed(axes) == "factualAccuracy"
+
+
+def test_veto_low_instruction_adherence_fails():
+    """instructionAdherence below the floor (e.g. a security-gate breach) vetoes
+    even with high factualAccuracy and a high mean."""
+    axes = {
+        "factualAccuracy": 0.9,
+        "completeness": 0.9,
+        "citationQuality": 0.9,
+        "answerStructure": 0.9,
+        "instructionAdherence": 0.1,
+        "answerRelevance": 0.9,
+    }
+    assert judge_mod.composite_score(axes) >= judge_mod.PASS_THRESHOLD
+    assert judge_mod.axes_to_verdict(axes) is False
+    assert judge_mod.vetoed(axes) == "instructionAdherence"
+
+
+def test_veto_does_not_fire_above_floor():
+    """A low-but-above-floor critical axis does NOT veto; the compensatory mean
+    decides. factualAccuracy=0.4 (>= 0.3 floor) with the rest at 0.9 -> mean
+    ~0.82 -> PASS."""
+    axes = {
+        "factualAccuracy": 0.4,
+        "completeness": 0.9,
+        "citationQuality": 0.9,
+        "answerStructure": 0.9,
+        "instructionAdherence": 0.9,
+        "answerRelevance": 0.9,
+    }
+    assert judge_mod.vetoed(axes) is None
+    assert judge_mod.axes_to_verdict(axes) is True
+
+
+def test_veto_absent_axis_cannot_veto():
+    """You can't fail a gate that wasn't measured: a missing factualAccuracy
+    must not trigger a veto."""
+    axes = {"completeness": 0.8, "answerRelevance": 0.8}
+    assert judge_mod.vetoed(axes) is None
+
+
+def test_veto_passes_clean_high_scores():
+    """A genuinely good answer (all axes high) still passes — the veto only
+    catches critical-axis failures, it doesn't tighten the bar for good output."""
+    assert judge_mod.vetoed(_all(0.9)) is None
+    assert judge_mod.axes_to_verdict(_all(0.9)) is True
+
+
 # ── _extract_verdict (6-axis JSON, old shape, garbage) ──────────────────────────
 
 

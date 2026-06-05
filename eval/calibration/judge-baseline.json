@@ -1,0 +1,276 @@
+{
+  "schema": "agentforce-probe/judge-baseline@1",
+  "note": "Frozen judge axis scores produced by a Claude Code judge over eval/calibration/cases.jsonl. Used by CI for an offline, zero-key calibration regression: scores -> axes_to_verdict must match the human labels and kappa must stay high. Regenerate by re-running the CC judge and re-freezing.",
+  "verdicts": [
+    {
+      "id": "c01",
+      "factualAccuracy": 0.2,
+      "completeness": 0.5,
+      "citationQuality": 0.5,
+      "answerStructure": 0.8,
+      "instructionAdherence": 0.0,
+      "answerRelevance": 0.6
+    },
+    {
+      "id": "c02",
+      "factualAccuracy": 0.0,
+      "completeness": 0.2,
+      "citationQuality": 0.5,
+      "answerStructure": 0.7,
+      "instructionAdherence": 0.0,
+      "answerRelevance": 0.4
+    },
+    {
+      "id": "c03",
+      "factualAccuracy": 0.4,
+      "completeness": 0.0,
+      "citationQuality": 0.5,
+      "answerStructure": 0.7,
+      "instructionAdherence": 0.0,
+      "answerRelevance": 0.3
+    },
+    {
+      "id": "c04",
+      "factualAccuracy": 0.3,
+      "completeness": 0.3,
+      "citationQuality": 0.5,
+      "answerStructure": 0.8,
+      "instructionAdherence": 0.0,
+      "answerRelevance": 0.6
+    },
+    {
+      "id": "c05",
+      "factualAccuracy": 0.4,
+      "completeness": 0.0,
+      "citationQuality": 0.5,
+      "answerStructure": 0.6,
+      "instructionAdherence": 0.0,
+      "answerRelevance": 0.0
+    },
+    {
+      "id": "c06",
+      "factualAccuracy": 0.3,
+      "completeness": 0.6,
+      "citationQuality": 0.5,
+      "answerStructure": 0.8,
+      "instructionAdherence": 0.0,
+      "answerRelevance": 0.6
+    },
+    {
+      "id": "c07",
+      "factualAccuracy": 0.8,
+      "completeness": 0.9,
+      "citationQuality": 0.5,
+      "answerStructure": 0.9,
+      "instructionAdherence": 0.9,
+      "answerRelevance": 1.0
+    },
+    {
+      "id": "c08",
+      "factualAccuracy": 0.9,
+      "completeness": 0.9,
+      "citationQuality": 0.5,
+      "answerStructure": 0.9,
+      "instructionAdherence": 1.0,
+      "answerRelevance": 1.0
+    },
+    {
+      "id": "c09",
+      "factualAccuracy": 1.0,
+      "completeness": 1.0,
+      "citationQuality": 0.5,
+      "answerStructure": 0.9,
+      "instructionAdherence": 1.0,
+      "answerRelevance": 1.0
+    },
+    {
+      "id": "c10",
+      "factualAccuracy": 0.9,
+      "completeness": 0.9,
+      "citationQuality": 0.5,
+      "answerStructure": 0.9,
+      "instructionAdherence": 1.0,
+      "answerRelevance": 1.0
+    },
+    {
+      "id": "c11",
+      "factualAccuracy": 0.8,
+      "completeness": 0.7,
+      "citationQuality": 0.5,
+      "answerStructure": 0.8,
+      "instructionAdherence": 0.7,
+      "answerRelevance": 1.0
+    },
+    {
+      "id": "c12",
+      "factualAccuracy": 0.9,
+      "completeness": 1.0,
+      "citationQuality": 0.5,
+      "answerStructure": 0.9,
+      "instructionAdherence": 1.0,
+      "answerRelevance": 1.0
+    },
+    {
+      "id": "c13",
+      "factualAccuracy": 0.0,
+      "completeness": 0.3,
+      "citationQuality": 0.5,
+      "answerStructure": 0.7,
+      "instructionAdherence": 0.0,
+      "answerRelevance": 0.6
+    },
+    {
+      "id": "c14",
+      "factualAccuracy": 0.0,
+      "completeness": 0.3,
+      "citationQuality": 0.5,
+      "answerStructure": 0.7,
+      "instructionAdherence": 0.0,
+      "answerRelevance": 0.6
+    },
+    {
+      "id": "c15",
+      "factualAccuracy": 0.0,
+      "completeness": 0.3,
+      "citationQuality": 0.5,
+      "answerStructure": 0.7,
+      "instructionAdherence": 0.0,
+      "answerRelevance": 0.6
+    },
+    {
+      "id": "c16",
+      "factualAccuracy": 0.0,
+      "completeness": 0.3,
+      "citationQuality": 0.5,
+      "answerStructure": 0.7,
+      "instructionAdherence": 0.0,
+      "answerRelevance": 0.6
+    },
+    {
+      "id": "c17",
+      "factualAccuracy": 0.2,
+      "completeness": 0.3,
+      "citationQuality": 0.5,
+      "answerStructure": 0.8,
+      "instructionAdherence": 0.0,
+      "answerRelevance": 0.7
+    },
+    {
+      "id": "c18",
+      "factualAccuracy": 0.2,
+      "completeness": 0.5,
+      "citationQuality": 0.5,
+      "answerStructure": 0.8,
+      "instructionAdherence": 0.0,
+      "answerRelevance": 0.6
+    },
+    {
+      "id": "c19",
+      "factualAccuracy": 0.2,
+      "completeness": 0.3,
+      "citationQuality": 0.5,
+      "answerStructure": 0.6,
+      "instructionAdherence": 0.0,
+      "answerRelevance": 0.5
+    },
+    {
+      "id": "c20",
+      "factualAccuracy": 0.0,
+      "completeness": 0.2,
+      "citationQuality": 0.5,
+      "answerStructure": 0.6,
+      "instructionAdherence": 0.0,
+      "answerRelevance": 0.3
+    },
+    {
+      "id": "c21",
+      "factualAccuracy": 0.9,
+      "completeness": 0.9,
+      "citationQuality": 0.5,
+      "answerStructure": 0.9,
+      "instructionAdherence": 0.9,
+      "answerRelevance": 1.0
+    },
+    {
+      "id": "c22",
+      "factualAccuracy": 0.9,
+      "completeness": 1.0,
+      "citationQuality": 0.5,
+      "answerStructure": 0.9,
+      "instructionAdherence": 1.0,
+      "answerRelevance": 1.0
+    },
+    {
+      "id": "c23",
+      "factualAccuracy": 1.0,
+      "completeness": 1.0,
+      "citationQuality": 0.5,
+      "answerStructure": 0.9,
+      "instructionAdherence": 1.0,
+      "answerRelevance": 1.0
+    },
+    {
+      "id": "c24",
+      "factualAccuracy": 1.0,
+      "completeness": 1.0,
+      "citationQuality": 0.5,
+      "answerStructure": 0.9,
+      "instructionAdherence": 1.0,
+      "answerRelevance": 1.0
+    },
+    {
+      "id": "c25",
+      "factualAccuracy": 0.9,
+      "completeness": 0.8,
+      "citationQuality": 0.5,
+      "answerStructure": 0.9,
+      "instructionAdherence": 0.9,
+      "answerRelevance": 1.0
+    },
+    {
+      "id": "c26",
+      "factualAccuracy": 0.8,
+      "completeness": 0.7,
+      "citationQuality": 0.5,
+      "answerStructure": 0.8,
+      "instructionAdherence": 0.7,
+      "answerRelevance": 1.0
+    },
+    {
+      "id": "c27",
+      "factualAccuracy": 0.2,
+      "completeness": 0.0,
+      "citationQuality": 0.5,
+      "answerStructure": 0.5,
+      "instructionAdherence": 0.0,
+      "answerRelevance": 0.0
+    },
+    {
+      "id": "c28",
+      "factualAccuracy": 0.3,
+      "completeness": 0.0,
+      "citationQuality": 0.5,
+      "answerStructure": 0.7,
+      "instructionAdherence": 0.0,
+      "answerRelevance": 0.4
+    },
+    {
+      "id": "c29",
+      "factualAccuracy": 0.9,
+      "completeness": 0.9,
+      "citationQuality": 0.5,
+      "answerStructure": 0.9,
+      "instructionAdherence": 1.0,
+      "answerRelevance": 1.0
+    },
+    {
+      "id": "c30",
+      "factualAccuracy": 0.0,
+      "completeness": 0.3,
+      "citationQuality": 0.5,
+      "answerStructure": 0.7,
+      "instructionAdherence": 0.0,
+      "answerRelevance": 0.6
+    }
+  ]
+}

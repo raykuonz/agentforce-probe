@@ -74,15 +74,53 @@ JUDGE_AXES = [
 
 PASS_THRESHOLD = 0.7
 
+# ── Hybrid aggregation: conjunctive veto + compensatory mean ──────────────────
+# Research (TruLens RAG-triad "all must pass", DeepEval DAG short-circuit-to-0,
+# and the conjunctive-vs-compensatory standard-setting literature) is consistent:
+# a pure (unweighted or weighted) mean lets a fabricated-but-fluent answer pass —
+# e.g. factualAccuracy=0.0 with five other axes at 0.9 averages to 0.75 (PASS).
+# A compensatory mean can never *guarantee* a hallucination fails; only a hard
+# floor can. So we gate the critical axes with a veto BEFORE the compensatory
+# mean: if any VETO_AXIS is below VETO_FLOOR, the case FAILs regardless of how
+# polished the rest of the response is.
+VETO_AXES = ("factualAccuracy", "instructionAdherence")
+VETO_FLOOR = 0.3
+
+
+def vetoed(axes, veto_axes=VETO_AXES, floor=VETO_FLOOR):
+    """Return the first veto axis that trips the hard floor, or None.
+
+    A veto axis trips when it is present and strictly below `floor`. Absent axes
+    cannot veto (you can't fail a gate that wasn't measured).
+    """
+    for k in veto_axes:
+        v = axes.get(k)
+        if v is not None and float(v) < floor:
+            return k
+    return None
+
 
 def composite_score(axes):
-    """Mean of the present JUDGE_AXES values; 0.0 if none present."""
+    """Mean of the present JUDGE_AXES values; 0.0 if none present.
+
+    NOTE: this is the compensatory component only. It does NOT apply the veto —
+    callers that need the final verdict must use axes_to_verdict(), which layers
+    the conjunctive veto on top of this mean.
+    """
     scores = [float(axes[k]) for k in JUDGE_AXES if k in axes and axes[k] is not None]
     return sum(scores) / len(scores) if scores else 0.0
 
 
 def axes_to_verdict(axes, threshold=PASS_THRESHOLD):
-    """True if composite_score(axes) >= threshold."""
+    """Hybrid verdict: conjunctive veto over a compensatory mean.
+
+    1. Veto (conjunctive hard gate): if any critical axis (VETO_AXES) is present
+       and below VETO_FLOOR, FAIL outright — a fabricated/non-compliant answer
+       cannot be bought back by high scores on stylistic axes.
+    2. Otherwise the compensatory mean must clear `threshold`.
+    """
+    if vetoed(axes):
+        return False
     return composite_score(axes) >= threshold
 
 

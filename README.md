@@ -179,7 +179,14 @@ about what has and hasn't been validated.
 
 ### What's verified
 
-- **Logic layer — fully tested.** 207 unit tests, 100% line coverage across all
+- **Internal path — exercised against a live org (2026-06-05).** The full
+  InternalCopilot flow (ECA mint → JWT → headless Agent API `create → run →
+  results`) was run end-to-end against a real internal agent in a live org: the
+  agent's actions were invoked, real data came back, and the official Testing
+  Center judge fired and returned a score — the live run that grounds the
+  "official judge is too lenient / routing is unobservable" findings above. Raw
+  commands and output are in [`docs/evidence/`](docs/evidence/).
+- **Logic layer — fully tested.** 277 unit tests, 100% line coverage across all
   modules. Spec loading, assertion filtering, scoring, evidence rendering, the
   judge contract, token-shape validation, and the Agent API error ladder are all
   exercised — with the network and the `sf` CLI mocked.
@@ -187,14 +194,16 @@ about what has and hasn't been validated.
 ### What's not yet verified
 
 - **100% coverage is not the same as "proven against a live org."** Every test
-  mocks the network and `sf`. The genuine end-to-end paths — `sf agent test`
-  against a real **External** agent, and ECA mint → JWT → live **Agent API**
-  session against a real **Internal** agent — have **not** been re-run against a
-  live Salesforce org in this open-source extraction. The InternalCopilot
+  mocks the network and `sf`. The **Internal** path's genuine end-to-end flow —
+  ECA mint → JWT → live **Agent API** session against a real internal agent —
+  was run against a live Salesforce org on **2026-06-05** (see
+  [`docs/evidence/`](docs/evidence/)). The **External** path
+  (`sf agent test` against a real ExternalCopilot agent) has **not** been re-run
+  against a live org in this open-source extraction. The InternalCopilot
   gotchas baked into the code (opaque-token 404, 412 config errors,
   `bypassUser` handling) were learned from real-world use, but treat **your
-  first live run as the first true end-to-end validation** and sanity-check the
-  evidence by hand.
+  first live External run as its first true end-to-end validation** and
+  sanity-check the evidence by hand.
 
 ### Known limitations
 
@@ -216,7 +225,9 @@ about what has and hasn't been validated.
   unreachable org could leave a dangling session server-side (low risk, no
   effect on the score).
 - **`--from-results` accepts External-shaped payloads only** (offline re-scoring
-  of `sf agent test results`); there's no offline replay for the Internal path.
+  of `sf agent test results`). The Internal path's offline re-evaluation goes
+  through `--from-verdicts` instead (the handoff judge flow) — so each path has
+  an offline route, just a different flag.
 
 ## Configure secrets (`.env`)
 
